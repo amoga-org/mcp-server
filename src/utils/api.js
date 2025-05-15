@@ -6,24 +6,38 @@ import {
   getDefaultStatuses,
 } from "./helper.js";
 import { v4 as uuidv4 } from "uuid";
-
 const isValidHexColor = (color) =>
   /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
 const defaultStatusColor = "#94A3B8";
 
-const getCrmToken = async (baseUrl, tenantName) => {
-  const apiKey = process.env.MCP_API_KEY;
-  const response = await fetch(
-    `${baseUrl}/api/v1/core/studio/get/tenant/coreapp?name=${tenantName}`,
-    {
-      headers: {
-        "API-KEY": apiKey,
-        "content-type": "application/json",
-      },
+export const getCrmToken = async (baseUrl, tenantName) => {
+  let apikey = process.env.MCP_API_KEY;
+  if (!apikey) {
+    throw new Error("API Key is required in configuration");
+  }
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/v1/core/studio/get/tenant/coreapp?name=${tenantName}`,
+      {
+        headers: {
+          "API-KEY": apikey,
+          "content-type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to get token: ${response.statusText}`);
     }
-  );
-  const data = await response.json();
-  return { coreApp: data.data.core_app, token: data.data.token };
+    const data = await response.json();
+    if (!data.data?.token) {
+      throw new Error("Token not found in response");
+    }
+    return { coreApp: data.data.core_app, token: data.data.token };
+  } catch (error) {
+    console.error("Error getting CRM token:", error);
+    throw error;
+  }
 };
 
 async function getAttributes(baseUrl, token) {

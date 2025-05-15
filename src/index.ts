@@ -9,9 +9,13 @@ import {
   createAppContract,
   createSotData,
 } from "./utils/api.js";
-import dotenv from 'dotenv';
-dotenv.config();
+import dotenv from "dotenv";
 // Create server instance
+dotenv.config();
+if (!process.env.MCP_API_KEY) {
+  console.error("MCP_API_KEY environment variable is not set");
+  process.exit(1);
+}
 const server = new McpServer({
   name: "amogastudio",
   version: "1.0.0",
