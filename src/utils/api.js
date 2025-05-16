@@ -268,6 +268,41 @@ export const createAppContract = async (
   // 3. Create the objects with their attributes and relationships
   const createdObjects = [];
   const forms_data = [];
+  const relationshipMap = new Map(); // Store relationships to handle bidirectional mapping
+
+  const createBidirectionalRelationship = (
+    sourceObj,
+    destinationObj,
+    relationship,
+    appId
+  ) => {
+    const relationshipId = uuidv4();
+    const reverseRelationshipId = uuidv4();
+
+    // Forward relationship (source to destination)
+    const forwardRelationship = {
+      id: relationshipId,
+      source_object_slug: sourceObj.slug,
+      destination_object_slug: destinationObj.slug,
+      destination_display_name: destinationObj.name,
+      relation_type: relationship.relationship_type,
+      is_external: false,
+    };
+
+    // Reverse relationship (destination to source)
+    const reverseRelationship = {
+      id: reverseRelationshipId,
+      source_object_slug: destinationObj.slug,
+      destination_object_slug: sourceObj.slug,
+      destination_display_name: sourceObj.name,
+      relation_type:
+        relationship.relationship_type === "manyToOne"
+          ? "oneToMany"
+          : "manyToOne",
+      is_external: false,
+    };
+    return { forwardRelationship, reverseRelationship };
+  };
 
   for (const slugInfo of slugList) {
     const objectDef = objects.find((obj) => obj.name === slugInfo.slug);
@@ -404,19 +439,78 @@ export const createAppContract = async (
 
     // Add relationships if any
     if (objectDef.relationship && objectDef.relationship.length > 0) {
-      newObject.relationship = objectDef.relationship.map((rel) => ({
-        id: uuidv4(),
-        source_object_slug: newObject.slug,
-        source_app_id: appId,
-        destination_object_slug: formatLocoName(rel.name),
-        destination_display_name: rel.name,
-        relation_type: rel.relationship_type,
-        is_external: false,
-      }));
+      const relationships = [];
+
+      objectDef.relationship.forEach((rel) => {
+        const destinationObjDef = objects.find((obj) => obj.name === rel.name);
+        if (!destinationObjDef) return;
+
+        const destinationSlug =
+          slugList.find((s) => s.slug === rel.name)?.generated_slug ||
+          formatLocoName(rel.name);
+        const destinationObj = {
+          name: destinationObjDef.name,
+          slug: destinationSlug,
+        };
+
+        const sourceObj = {
+          name: objectDef.name,
+          slug: slugInfo.generated_slug,
+        };
+
+        if (
+          rel.relationship_type === "manyToOne" ||
+          rel.relationship_type === "oneToMany"
+        ) {
+          const { forwardRelationship, reverseRelationship } =
+            createBidirectionalRelationship(
+              sourceObj,
+              destinationObj,
+              rel,
+              appId
+            );
+
+          relationships.push(forwardRelationship);
+
+          const key = `${destinationObj.slug}:${sourceObj.slug}`;
+          relationshipMap.set(key, {
+            relationship: reverseRelationship,
+            targetSlug: destinationObj.slug,
+          });
+        } else {
+          relationships.push({
+            id: uuidv4(),
+            source_object_slug: sourceObj.slug,
+            destination_object_slug: destinationObj.slug,
+            destination_display_name: destinationObj.name,
+            relation_type: rel.relationship_type,
+            is_external: false,
+          });
+        }
+      });
+
+      newObject.relationship = relationships;
     }
 
     createdObjects.push(newObject);
   }
+
+  // Update the relationship addition for destination objects
+  createdObjects.forEach((obj) => {
+    relationshipMap.forEach((relInfo, key) => {
+      if (obj.slug === relInfo.targetSlug) {
+        // Check if this relationship already exists
+        const existingRelationship = obj.relationship.find(
+          (r) => r.id === relInfo.relationship.id
+        );
+
+        if (!existingRelationship) {
+          // Add the reverse relationship
+          obj.relationship.push(relInfo.relationship);
+        }
+      }
+    });
+  });
 
   // 4. Save the contract with the new objects
   const contractResponse = await fetch(
