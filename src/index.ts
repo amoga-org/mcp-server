@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -151,7 +152,7 @@ const server = new McpServer({
                 .array(
                   z.object({
                     name: z.string(),
-                    relationship_type: z.string(),
+                    relationship_type: z.enum(["manyToOne", "oneToMany"]),
                   })
                 )
                 .optional(),
@@ -392,7 +393,7 @@ server.tool(
           .array(
             z.object({
               name: z.string(),
-              relationship_type: z.string(),
+              relationship_type: z.enum(["manyToOne", "oneToMany"]),
             })
           )
           .optional(),

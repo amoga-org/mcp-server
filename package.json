@@ -1,10 +1,14 @@
 {
-    "name": "mcp-server",
+    "name": "mcp-server-amogastudio",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "build/index.js",
     "type": "module",
+    "bin": {
+        "mcp-amogastudio": "build/index.js"
+    },
     "scripts": {
-        "build": "tsc && chmod 755 build/index.js",
+        "build": "cross-env NODE_ENV=development tsc && chmod 755 build/index.js",
+        "prepare": "npm run build",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "files": [
@@ -14,14 +18,19 @@
         "type": "git",
         "url": "git+https://github.com/amoga-org/mcp-server.git"
     },
-    "keywords": [],
+    "keywords": [
+        "mcp",
+        "amogastudio",
+        "claude",
+        "copilot"
+    ],
     "author": "",
     "license": "ISC",
     "bugs": {
         "url": "https://github.com/amoga-org/mcp-server/issues"
     },
     "homepage": "https://github.com/amoga-org/mcp-server#readme",
-    "description": "",
+    "description": "MCP Server for Amoga Studio integration with Claude Desktop",
     "dependencies": {
         "@modelcontextprotocol/sdk": "^1.11.1",
         "@types/uuid": "^10.0.0",
@@ -32,6 +41,7 @@
     },
     "devDependencies": {
         "@types/node": "^22.15.17",
+        "cross-env": "^7.0.3",
         "typescript": "^5.8.3"
     }
 }
