@@ -245,7 +245,90 @@ export const createAppContract = async (
   // First get all available attributes
   const allAvailableAttributes = await getAttributes(baseUrl, token);
 
-  // 2. Generate slugs for the objects
+  // Get existing contract to check for existing objects
+  const existingContract = await getAppContract(baseUrl, tenantName, appId);
+  const existingObjects = existingContract?.contract_json?.objects || [];
+  const existingObjectsBySlug = new Map(
+    existingObjects.map((obj) => [obj.slug, obj])
+  );
+
+  // Add validation function for relationships
+  const validateRelationships = (objects) => {
+    // Track task-workitem relationships to enforce one-to-one constraint
+    const taskRelationships = new Map();
+
+    objects.forEach((obj) => {
+      if (!obj.relationship || obj.relationship.length === 0) return;
+
+      switch (obj.type) {
+        case "workitem":
+          obj.relationship = obj.relationship.filter((rel) => {
+            const targetObj = objects.find((o) => o.name === rel.name);
+            return (
+              targetObj?.type === "task" &&
+              rel.relationship_type === "oneToMany"
+            );
+          });
+          break;
+
+        case "task":
+          // Only allow one relationship with workitem
+          const workitemRels = obj.relationship.filter((rel) => {
+            const targetObj = objects.find((o) => o.name === rel.name);
+            return (
+              targetObj?.type === "workitem" &&
+              rel.relationship_type === "manyToOne"
+            );
+          });
+
+          // Take only the first workitem relationship if multiple exist
+          obj.relationship = workitemRels.slice(0, 1);
+
+          // Track this relationship
+          if (obj.relationship.length > 0) {
+            taskRelationships.set(obj.name, obj.relationship[0].name);
+          }
+          break;
+
+        case "master":
+          const masterObjects = objects.filter((o) => o.type === "master");
+          const hasTwoMasterObjects = masterObjects.length >= 2;
+
+          if (hasTwoMasterObjects) {
+            obj.relationship = obj.relationship.filter((rel) => {
+              const targetObj = objects.find((o) => o.name === rel.name);
+              return (
+                targetObj?.type === "master" &&
+                (rel.relationship_type === "oneToMany" ||
+                  rel.relationship_type === "manyToOne")
+              );
+            });
+          } else {
+            obj.relationship = [];
+          }
+          break;
+
+        default:
+          obj.relationship = [];
+      }
+    });
+
+    return { objects, taskRelationships };
+  };
+
+  // Validate relationships before processing
+  const { objects: validatedObjects, taskRelationships } =
+    validateRelationships(objects);
+  objects = validatedObjects;
+
+  // 2. Generate slugs for the objects that don't exist
+  const newObjects = objects.filter(
+    (obj) =>
+      !existingObjects.some(
+        (existing) => existing.name.toLowerCase() === obj.name.toLowerCase()
+      )
+  );
+
   const slugResponse = await fetch(
     `${baseUrl}/api/v1/core/studio/generate/unique/slug`,
     {
@@ -257,7 +340,7 @@ export const createAppContract = async (
       body: JSON.stringify({
         model: "LocoWorkitems",
         fields: "slug",
-        value: objects.map((obj) => obj.name),
+        value: newObjects.map((obj) => obj.name),
       }),
     }
   );
@@ -266,9 +349,11 @@ export const createAppContract = async (
   const slugList = slugData.data;
 
   // 3. Create the objects with their attributes and relationships
-  const createdObjects = [];
-  const forms_data = [];
-  const relationshipMap = new Map(); // Store relationships to handle bidirectional mapping
+  const updatedObjects = [...existingObjects];
+  // Get existing forms from the contract
+  const existingForms = existingContract?.forms || [];
+  const forms_data = [...existingForms]; // Preserve existing forms
+  const relationshipMap = new Map();
 
   const createBidirectionalRelationship = (
     sourceObj,
@@ -304,9 +389,18 @@ export const createAppContract = async (
     return { forwardRelationship, reverseRelationship };
   };
 
-  for (const slugInfo of slugList) {
-    const objectDef = objects.find((obj) => obj.name === slugInfo.slug);
-    if (!objectDef) continue;
+  for (const objectDef of objects) {
+    // Check if object already exists
+    const existingObject = existingObjects.find(
+      (existing) => existing.name.toLowerCase() === objectDef.name.toLowerCase()
+    );
+
+    const slugInfo = existingObject
+      ? { generated_slug: existingObject.slug, slug: objectDef.name }
+      : slugList.find((s) => s.slug === objectDef.name);
+
+    if (!slugInfo) continue;
+
     let form_blacklist = [
       "amo_created_at",
       "amo_updated_at",
@@ -329,7 +423,6 @@ export const createAppContract = async (
         }),
       ])
     );
-    // Create combined attributes object with both existing and new
     const indexed_attributes = {
       ...allAvailableAttributes,
       ...Object.fromEntries(
@@ -339,7 +432,6 @@ export const createAppContract = async (
             objectDef.attributes) ||
           []
         ).map((obj) => {
-          // Check if attribute already exists in available attributes
           const existingAttr = Object.values(allAvailableAttributes).find(
             (a) =>
               a.display_name.toLowerCase() === obj.display_name.toLowerCase()
@@ -381,42 +473,61 @@ export const createAppContract = async (
         };
       })
       .filter(Boolean);
-    // Create the basic object structure
-    const newObject = {
-      name: objectDef.name,
-      slug: slugInfo.generated_slug,
-      type: objectDef.type,
-      application_id: appId,
-      attributes: attributes || [],
-      icon: {
-        svg: "memo",
-        color: "#5f6368",
-        style: "solid",
-        version: 1,
-      },
-      relationship: [],
-      maps: {
-        status: [],
-        priority: getDefaultPriorities().map((p) => ({
-          ...p,
-          slug: `${slugInfo.generated_slug}__${p.loco_name}`,
-        })),
-      },
-      application_name: appName,
-    };
-    //form creation
-    forms_data.push({
-      form: form || [],
-      name: objectDef.name,
-      slug: slugInfo.generated_slug,
-    });
-    // Add statuses
+
+    // Create or update the object
+    const updatedObject = existingObject
+      ? { ...existingObject }
+      : {
+          name: objectDef.name,
+          slug: slugInfo.generated_slug,
+          type: objectDef.type,
+          application_id: appId,
+          attributes: attributes || [],
+          created_by: "bishal@tangohr.com",
+          last_updated_by: "bishal@tangohr.com",
+          description: "",
+          subtype: "",
+          parent: null,
+          icon: {
+            svg: "memo",
+            color: "#5f6368",
+            style: "solid",
+            version: 1,
+          },
+          is_global: false,
+          relationship: [],
+          maps: {
+            status: [],
+            priority: getDefaultPriorities().map((p) => ({
+              ...p,
+              slug: `${slugInfo.generated_slug}__${p.loco_name}`,
+            })),
+          },
+          application_name: appName,
+        };
+
+    // Add parent key for task objects that have a workitem relationship
+    if (objectDef.type === "task" && taskRelationships.has(objectDef.name)) {
+      const workitemName = taskRelationships.get(objectDef.name);
+      const workitemObj = objects.find((obj) => obj.name === workitemName);
+      if (workitemObj) {
+        const workitemSlugInfo =
+          existingObjects.find(
+            (obj) => obj.name.toLowerCase() === workitemName.toLowerCase()
+          )?.slug ||
+          slugList.find((s) => s.slug === workitemName)?.generated_slug;
+
+        if (workitemSlugInfo) {
+          updatedObject.parent = workitemSlugInfo;
+        }
+      }
+    }
+
+    // Update statuses
     if (objectDef.status && objectDef.status.length > 0) {
-      newObject.maps.status = objectDef.status.map((status, index) => {
-        // Validate or convert color to hex
+      updatedObject.maps.status = objectDef.status.map((status, index) => {
         let statusColor = status.color || defaultStatusColor;
         if (statusColor && !isValidHexColor(statusColor)) {
-          // If it's not a valid hex color, use the default
           statusColor = defaultStatusColor;
         }
 
@@ -430,14 +541,14 @@ export const createAppContract = async (
           slug: `${slugInfo.generated_slug}__${formatLocoName(status.name)}`,
         };
       });
-    } else {
-      newObject.maps.status = getDefaultStatuses().map((s) => ({
+    } else if (!existingObject || !updatedObject.maps.status.length) {
+      updatedObject.maps.status = getDefaultStatuses().map((s) => ({
         ...s,
         slug: `${slugInfo.generated_slug}__${s.loco_name}`,
       }));
     }
 
-    // Add relationships if any
+    // Handle relationships
     if (objectDef.relationship && objectDef.relationship.length > 0) {
       const relationships = [];
 
@@ -445,17 +556,48 @@ export const createAppContract = async (
         const destinationObjDef = objects.find((obj) => obj.name === rel.name);
         if (!destinationObjDef) return;
 
+        // Additional validation during relationship creation
+        if (
+          objectDef.type === "workitem" &&
+          (destinationObjDef.type !== "task" ||
+            rel.relationship_type !== "oneToMany")
+        ) {
+          return;
+        }
+
+        if (objectDef.type === "task") {
+          // Only allow one relationship with workitem
+          if (
+            destinationObjDef.type !== "workitem" ||
+            rel.relationship_type !== "manyToOne" ||
+            relationships.length > 0
+          ) {
+            return;
+          }
+        }
+
+        if (objectDef.type === "master") {
+          const masterCount = objects.filter((o) => o.type === "master").length;
+          if (masterCount !== 2 || destinationObjDef.type !== "master") {
+            return;
+          }
+        }
+
         const destinationSlug =
+          existingObjects.find(
+            (obj) => obj.name.toLowerCase() === rel.name.toLowerCase()
+          )?.slug ||
           slugList.find((s) => s.slug === rel.name)?.generated_slug ||
           formatLocoName(rel.name);
-        const destinationObj = {
-          name: destinationObjDef.name,
-          slug: destinationSlug,
-        };
 
         const sourceObj = {
           name: objectDef.name,
           slug: slugInfo.generated_slug,
+        };
+
+        const destinationObj = {
+          name: destinationObjDef.name,
+          slug: destinationSlug,
         };
 
         if (
@@ -489,30 +631,60 @@ export const createAppContract = async (
         }
       });
 
-      newObject.relationship = relationships;
+      updatedObject.relationship = relationships;
     }
 
-    createdObjects.push(newObject);
+    // Add or update form data
+    const existingFormIndex = forms_data.findIndex(
+      (f) => f.slug === slugInfo.generated_slug
+    );
+    const formData = {
+      form: form || [],
+      name: objectDef.name,
+      slug: slugInfo.generated_slug,
+    };
+
+    if (existingFormIndex !== -1) {
+      // Merge existing form with new form data, preserving existing fields
+      const existingForm = forms_data[existingFormIndex];
+      const existingFormFields = new Set(existingForm.form.map((f) => f.key));
+      const newFormFields = form.filter((f) => !existingFormFields.has(f.key));
+      formData.form = [...existingForm.form, ...newFormFields];
+      forms_data[existingFormIndex] = formData;
+    } else {
+      forms_data.push(formData);
+    }
+
+    if (existingObject) {
+      // Update existing object
+      const index = updatedObjects.findIndex(
+        (obj) => obj.slug === existingObject.slug
+      );
+      if (index !== -1) {
+        updatedObjects[index] = updatedObject;
+      }
+    } else {
+      // Add new object
+      updatedObjects.push(updatedObject);
+    }
   }
 
-  // Update the relationship addition for destination objects
-  createdObjects.forEach((obj) => {
+  // Update relationships for all objects
+  updatedObjects.forEach((obj) => {
     relationshipMap.forEach((relInfo, key) => {
       if (obj.slug === relInfo.targetSlug) {
-        // Check if this relationship already exists
         const existingRelationship = obj.relationship.find(
           (r) => r.id === relInfo.relationship.id
         );
 
         if (!existingRelationship) {
-          // Add the reverse relationship
           obj.relationship.push(relInfo.relationship);
         }
       }
     });
   });
 
-  // 4. Save the contract with the new objects
+  // 4. Save the contract with updated objects and preserved forms
   const contractResponse = await fetch(
     `${baseUrl}/api/v1/core/studio/contract/app_meta/${appId}`,
     {
@@ -525,23 +697,20 @@ export const createAppContract = async (
         contract_json: {
           application_id: appId,
           application_name: appName,
-          description: "",
-          cover_image: "",
-          icon: {
+          description: existingContract?.contract_json?.description || "",
+          cover_image: existingContract?.contract_json?.cover_image || "",
+          icon: existingContract?.contract_json?.icon || {
             svg: "memo",
             color: "#5f6368",
             style: "solid",
             version: 1,
           },
-          tags: [],
+          tags: existingContract?.contract_json?.tags || [],
           slug: appSlug,
-          objects: createdObjects,
-          modeling_data: {
-            data: [],
-          },
+          objects: updatedObjects,
         },
         forms: forms_data,
-        actions: [],
+        actions: existingContract?.actions || [],
       }),
     }
   );

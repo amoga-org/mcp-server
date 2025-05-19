@@ -63,5 +63,5 @@ The server will handle authentication automatically using the provided API key.
 The server accepts the following environment variables:
 
 - `MCP_API_KEY` (required): Your Amoga Studio API key
-- `BASE_URL` (optional): The base URL of your Amoga Studio instance (defaults to https://studio.amoga.live)
+- `BASE_URL` (optional): The base URL of your Amoga Studio instance
 - `TENANT_NAME` (optional): Your tenant name (can be specified per command)

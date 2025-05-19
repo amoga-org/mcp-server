@@ -136,7 +136,7 @@ const server = new McpServer({
                 .array(
                   z.object({
                     name: z.string(),
-                    color: z.string().optional(),
+                    color: z.string(),
                     amo_name: z.enum([
                       "todo",
                       "inProgress",
@@ -377,7 +377,7 @@ server.tool(
           .array(
             z.object({
               name: z.string(),
-              color: z.string().optional(),
+              color: z.string(),
               amo_name: z.enum([
                 "todo",
                 "inProgress",
