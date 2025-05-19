@@ -105,3 +105,13 @@ export const appPayload = (appName) => ({
   create_pages: true,
   cover_image: "",
 });
+
+export const defaultPermission = {
+  create: true,
+  read: true,
+  update: true,
+  delete: true,
+  pick: true,
+  assign: true,
+  release: true,
+};

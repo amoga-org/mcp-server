@@ -1,5 +1,6 @@
 import {
   appPayload,
+  defaultPermission,
   formatLocoName,
   get_default_attributes,
   getDefaultPriorities,
@@ -9,7 +10,29 @@ import { v4 as uuidv4 } from "uuid";
 const isValidHexColor = (color) =>
   /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
 const defaultStatusColor = "#94A3B8";
-
+const rolesPermissions = (objects, roleName, slug) => {
+  let loco_permission = Object.assign(
+    {},
+    ...objects.map((item) => {
+      return { [item.slug]: defaultPermission };
+    })
+  );
+  let permission_level = Object.assign(
+    {},
+    ...objects.map((item) => {
+      return { [item.slug]: 40 };
+    })
+  );
+  return {
+    slug: {
+      loco_role: slug,
+      display_name: roleName,
+      loco_permission: loco_permission,
+      permission_level: permission_level,
+      mapped_job_titles: [],
+    },
+  };
+};
 export const getCrmToken = async (baseUrl, tenantName) => {
   let apikey = process.env.MCP_API_KEY;
   if (!apikey) {
@@ -711,6 +734,7 @@ export const createAppContract = async (
         },
         forms: forms_data,
         actions: existingContract?.actions || [],
+        permission: rolesPermissions(updatedObjects, "admin", "admin"),
       }),
     }
   );
