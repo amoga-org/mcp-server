@@ -24,7 +24,7 @@ const rolesPermissions = (objects, roleName, slug) => {
     })
   );
   return {
-    slug: {
+    [slug]: {
       loco_role: slug,
       display_name: roleName,
       loco_permission: loco_permission,
