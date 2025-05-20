@@ -9,6 +9,7 @@ import {
   getAppContract,
   createAppContract,
   createSotData,
+  deleteObject,
 } from "./utils/api.js";
 import dotenv from "dotenv";
 // Create server instance
@@ -199,6 +200,15 @@ const server = new McpServer({
               }),
             })
           ),
+        }),
+      },
+      "delete-object": {
+        description: "Delete an object from the application contract",
+        parameters: z.object({
+          tenantName: z.string(),
+          baseUrl: z.string().url(),
+          appId: z.string(),
+          objectName: z.string(),
         }),
       },
     },
@@ -505,6 +515,39 @@ server.tool(
           {
             type: "text",
             text: `❌ Failed to create/update SOTs: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  "delete-object",
+  "Delete an object from the application contract",
+  {
+    tenantName: z.string(),
+    baseUrl: z.string().url(),
+    appId: z.string(),
+    objectName: z.string(),
+  },
+  async ({ tenantName, baseUrl, appId, objectName }) => {
+    try {
+      await deleteObject(baseUrl, tenantName, appId, objectName);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `✅ Successfully deleted object "${objectName}"`,
+          },
+        ],
+      };
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Failed to delete object: ${err.message || err}`,
           },
         ],
       };

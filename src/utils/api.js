@@ -506,8 +506,8 @@ export const createAppContract = async (
           type: objectDef.type,
           application_id: appId,
           attributes: attributes || [],
-          created_by: "bishal@tangohr.com",
-          last_updated_by: "bishal@tangohr.com",
+          created_by: email ? email : "bishal@tangohr.com",
+          last_updated_by: email ? email : "bishal@tangohr.com",
           description: "",
           subtype: "",
           parent: null,
@@ -739,5 +739,72 @@ export const createAppContract = async (
     }
   );
   const data = await contractResponse.json();
+  return data.data;
+};
+
+export const deleteObject = async (baseUrl, tenantName, appId, objectName) => {
+  const { token } = await getCrmToken(baseUrl, tenantName);
+
+  // Get existing contract
+  const existingContract = await getAppContract(baseUrl, tenantName, appId);
+  if (!existingContract?.contract_json?.objects) {
+    throw new Error("Could not fetch app contract or no objects found");
+  }
+
+  // Find the object to delete
+  const objectToDelete = existingContract.contract_json.objects.find(
+    (obj) => obj.name.toLowerCase() === objectName.toLowerCase()
+  );
+
+  if (!objectToDelete) {
+    throw new Error(
+      `Object with name "${objectName}" not found in the contract`
+    );
+  }
+
+  // Remove the object and its relationships from other objects
+  const updatedObjects = existingContract.contract_json.objects
+    .filter((obj) => obj.name.toLowerCase() !== objectName.toLowerCase())
+    .map((obj) => {
+      // Remove relationships that reference the deleted object
+      if (obj.relationship) {
+        obj.relationship = obj.relationship.filter(
+          (rel) => rel.destination_object_slug !== objectToDelete.slug
+        );
+      }
+      return obj;
+    });
+
+  // Remove forms related to the deleted object
+  const updatedForms = (existingContract.forms || []).filter(
+    (form) => form.slug !== objectToDelete.slug
+  );
+
+  // Update the contract
+  const response = await fetch(
+    `${baseUrl}/api/v1/core/studio/contract/app_meta/${appId}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        contract_json: {
+          ...existingContract.contract_json,
+          objects: updatedObjects,
+        },
+        forms: updatedForms,
+        actions: existingContract.actions || [],
+        permission: rolesPermissions(updatedObjects, "admin", "admin"),
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete object: ${response.statusText}`);
+  }
+
+  const data = await response.json();
   return data.data;
 };
