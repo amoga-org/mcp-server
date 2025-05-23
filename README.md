@@ -15,7 +15,7 @@ Add this server to your Claude Desktop configuration by adding one of the follow
       "command": "npx",
       "args": [
         "-y",
-        "@amoga/mcp-server-amogastudio"
+        "mcp-server-amogastudio"
       ],
       "env": {
         "MCP_API_KEY": "YOUR_API_KEY"
@@ -33,7 +33,7 @@ Add this server to your Claude Desktop configuration by adding one of the follow
     "appstudio": {
       "command": "uvx",
       "args": [
-        "@amoga/mcp-server-amogastudio"
+        "mcp-server-amogastudio"
       ],
       "env": {
         "MCP_API_KEY": "YOUR_API_KEY"

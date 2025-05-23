@@ -1,5 +1,5 @@
 {
-    "name": "@amoga/mcp-server-amogastudio",
+    "name": "mcp-server-amogastudio",
     "version": "1.0.5",
     "main": "build/index.js",
     "type": "module",
