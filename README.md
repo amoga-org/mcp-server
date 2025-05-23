@@ -4,7 +4,9 @@ This MCP server allows you to interact with the Amoga Studio API through Claude 
 
 ## Quick Setup (No Clone Required)
 
-Add this server to your Claude Desktop configuration by adding the following to your Claude configuration:
+Add this server to your Claude Desktop configuration by adding one of the following configurations:
+
+### Using npx:
 
 ```json
 {
@@ -13,7 +15,25 @@ Add this server to your Claude Desktop configuration by adding the following to 
       "command": "npx",
       "args": [
         "-y",
-        "mcp-server-amogastudio"
+        "@amoga/mcp-server-amogastudio"
+      ],
+      "env": {
+        "MCP_API_KEY": "YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+### Using uvx:
+
+```json
+{
+  "mcpServers": {
+    "appstudio": {
+      "command": "uvx",
+      "args": [
+        "@amoga/mcp-server-amogastudio"
       ],
       "env": {
         "MCP_API_KEY": "YOUR_API_KEY"
