@@ -395,6 +395,7 @@ export const createAppContract = async (
       destination_display_name: destinationObj.name,
       relation_type: relationship.relationship_type,
       is_external: false,
+      source_app_id: appId,
     };
 
     // Reverse relationship (destination to source)
@@ -403,6 +404,7 @@ export const createAppContract = async (
       source_object_slug: destinationObj.slug,
       destination_object_slug: sourceObj.slug,
       destination_display_name: sourceObj.name,
+      source_app_id: appId,
       relation_type:
         relationship.relationship_type === "manyToOne"
           ? "oneToMany"
