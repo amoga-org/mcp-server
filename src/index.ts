@@ -171,12 +171,11 @@ const server = new McpServer({
       "create-sot": {
         description:
           "Create SOT (Status Origination Tree). " +
-          "Each SOT defines how and from where an object’s status can change. Transitions are linked to origination sources like workflows, automation rules, or UI pages. " +
-          "If `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** and populate the `widgets` array. Also, in the `origination` object, add a `type` enum indicating what kind of page it is — valid values: `record`, `general`. " +
-          "\n\n📄 Page Type Behavior:\n" +
+          "The SOT defines how and from where an object’s status can change. Each transition is linked to an origination source such as a workflow, automation rule, or page. " +
+          "If `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property. If not explicitly provided, the AI should decide when `origination_type` should be `page` based on the nature of the object and transition context. " +
           "- `record`: All widgets applicable to the object type are allowed (e.g., header, details, comment, activity, jsonform, attachments, etc.), including `stats` and `table` if appropriate.\n" +
           "- `general`: Only `stats` and `table` widgets must be included. No other widgets are allowed.\n" +
-          "\n⚙️ Widget Auto-Generation Rules:\n" +
+          "⚙️ Widget Auto-Generation Rules:\n" +
           "- If object type is `workitem` or `task`, include:\n" +
           "  • header, details, comment, activity\n" +
           "- If object type is for display (e.g., `object`, `master`), include:\n" +
@@ -187,15 +186,15 @@ const server = new McpServer({
           "  • automationLogs, eventLog, progressbar, taskIframe\n" +
           "- For advanced or custom UI, optionally include:\n" +
           "  • customComponent, container, richTextEditor, carousel, qrscanner, calendar, map, chart, json\n" +
-          "\n🧩 Grid Layout Auto-Generation:\n" +
-          "Each widget must include a `grid_props` object to control layout positioning and size.\n" +
-          "- Layout rules:\n" +
-          "  • w: width (1 to 12; total columns = 12)\n" +
-          "  • h: height — where **1 unit = 14px**; compute h as `ceil(height_px / 14)`\n" +
-          "  • x, y: position (AI auto-calculates to prevent overlap)\n" +
+          "🧩 Grid Layout Auto-Generation:\n" +
+          "Each widget must include a `grid_props` object for layout control. The AI must auto-generate these dynamically based on widget type and available space.\n" +
+          "- Default layout values:\n" +
+          "  • w: width (max 12)\n" +
+          "  • h: height (calculated based on widget type — 1 grid unit = 14px, so total height in px ÷ 14 = h)\n" +
+          "  • x, y: position on grid (auto-calculated to prevent overlap)\n" +
           "  • isResizable: true\n" +
           "  • static: false\n" +
-          "\n🖼️ Page Layout Previews (for origination_type = page):\n" +
+          "🖼️ Page Layout Previews (for origination_type = page):\n" +
           "- WorkItem General Page:\n" +
           "  ┌───────────────────────────────┐\n" +
           "  │   [ Stat Widget 1 ]           │\n" +
@@ -209,18 +208,16 @@ const server = new McpServer({
           "  │       [ Header Widget ]       │\n" +
           "  │     [ Details Widget ]        │\n" +
           "  │ [ Comment ]    [ Activity ]   │\n" +
-          "  │     [ Table ]  [ Stats ]      │\n" +
           "  └───────────────────────────────┘\n" +
           "- Task / Object General Page:\n" +
           "  ┌───────────────────────────────┐\n" +
           "  │       [ Table Widget ]        │\n" +
-          "  │         [ Stats ]             │\n" +
           "  └───────────────────────────────┘\n" +
           "- Object with Full Display Needs:\n" +
           "  ┌───────────────────────────────┐\n" +
-          "  │  [ Stats1]   [Stats2]         │\n" +
-          "  │        [ Table Widget ]       │\n" +
-          "  │        [ JSON Form ]          │\n" +
+          "  │  [ Stats ]   [ Filters ]       │\n" +
+          "  │        [ Table Widget ]        │\n" +
+          "  │        [ JSON Form ]           │\n" +
           "  └───────────────────────────────┘\n",
         parameters: z.object({
           baseUrl: z.string().url(),
@@ -565,12 +562,11 @@ server.tool(
 server.tool(
   "create-sot",
   "Create SOT (Status Origination Tree). " +
-    "Each SOT defines how and from where an object’s status can change. Transitions are linked to origination sources like workflows, automation rules, or UI pages. " +
-    "If `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** and populate the `widgets` array. Also, in the `origination` object, add a `type` enum indicating what kind of page it is — valid values: `record`, `general`. " +
-    "\n\n📄 Page Type Behavior:\n" +
+    "The SOT defines how and from where an object’s status can change. Each transition is linked to an origination source such as a workflow, automation rule, or page. " +
+    "If `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property. If not explicitly provided, the AI should decide when `origination_type` should be `page` based on the nature of the object and transition context. " +
     "- `record`: All widgets applicable to the object type are allowed (e.g., header, details, comment, activity, jsonform, attachments, etc.), including `stats` and `table` if appropriate.\n" +
     "- `general`: Only `stats` and `table` widgets must be included. No other widgets are allowed.\n" +
-    "\n⚙️ Widget Auto-Generation Rules:\n" +
+    "⚙️ Widget Auto-Generation Rules:\n" +
     "- If object type is `workitem` or `task`, include:\n" +
     "  • header, details, comment, activity\n" +
     "- If object type is for display (e.g., `object`, `master`), include:\n" +
@@ -581,15 +577,15 @@ server.tool(
     "  • automationLogs, eventLog, progressbar, taskIframe\n" +
     "- For advanced or custom UI, optionally include:\n" +
     "  • customComponent, container, richTextEditor, carousel, qrscanner, calendar, map, chart, json\n" +
-    "\n🧩 Grid Layout Auto-Generation:\n" +
-    "Each widget must include a `grid_props` object to control layout positioning and size.\n" +
-    "- Layout rules:\n" +
-    "  • w: width (1 to 12; total columns = 12)\n" +
-    "  • h: height — where **1 unit = 14px**; compute h as `ceil(height_px / 14)`\n" +
-    "  • x, y: position (AI auto-calculates to prevent overlap)\n" +
+    "🧩 Grid Layout Auto-Generation:\n" +
+    "Each widget must include a `grid_props` object for layout control. The AI must auto-generate these dynamically based on widget type and available space.\n" +
+    "- Default layout values:\n" +
+    "  • w: width (max 12)\n" +
+    "  • h: height (calculated based on widget type — 1 grid unit = 14px, so total height in px ÷ 14 = h)\n" +
+    "  • x, y: position on grid (auto-calculated to prevent overlap)\n" +
     "  • isResizable: true\n" +
     "  • static: false\n" +
-    "\n🖼️ Page Layout Previews (for origination_type = page):\n" +
+    "🖼️ Page Layout Previews (for origination_type = page):\n" +
     "- WorkItem General Page:\n" +
     "  ┌───────────────────────────────┐\n" +
     "  │   [ Stat Widget 1 ]           │\n" +
@@ -603,12 +599,10 @@ server.tool(
     "  │       [ Header Widget ]       │\n" +
     "  │     [ Details Widget ]        │\n" +
     "  │ [ Comment ]    [ Activity ]   │\n" +
-    "  │     [ Table ]  [ Stats ]      │\n" +
     "  └───────────────────────────────┘\n" +
     "- Task / Object General Page:\n" +
     "  ┌───────────────────────────────┐\n" +
     "  │       [ Table Widget ]        │\n" +
-    "  │         [ Stats ]             │\n" +
     "  └───────────────────────────────┘\n" +
     "- Object with Full Display Needs:\n" +
     "  ┌───────────────────────────────┐\n" +
