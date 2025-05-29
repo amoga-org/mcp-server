@@ -7,6 +7,7 @@ import {
   getDefaultStatuses,
 } from "./helper.js";
 import { v4 as uuidv4 } from "uuid";
+import { widgets } from "./config/widgts.js";
 const isValidHexColor = (color) =>
   /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
 const defaultStatusColor = "#94A3B8";
@@ -33,6 +34,60 @@ const rolesPermissions = (objects, roleName, slug) => {
     },
   };
 };
+const createPageV1 = async (baseUrl, token, data) => {
+  try {
+    const response = await fetch(`${baseUrl}/api/v1/core/page`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = await response.json();
+    // if (!response.ok) throw result;
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const updateMappedWidget = async (baseUrl, token, pageId, data) => {
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/v1/core/page/${pageId}/widget`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }
+    );
+    const result = await response.json();
+    console.log("resultresult", result);
+    if (!response.ok) throw result;
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+const handleUsePageTemplate = async (baseUrl, token, pageData) => {
+  try {
+    const { widgets: pageWidgets, ...metaData } = pageData;
+    const createResponse = await createPageV1(baseUrl, token, metaData);
+    if (createResponse.status === 1) {
+      await updateMappedWidget(baseUrl, token, createResponse.data.id, {
+        page_widget: pageWidgets || [],
+      });
+    }
+  } catch (error) {
+    console.error("Error creating page template:", error);
+  }
+};
+
 export const getCrmToken = async (baseUrl, tenantName) => {
   let apikey = process.env.MCP_API_KEY;
   if (!apikey) {
@@ -185,41 +240,56 @@ export const createSotData = async (
   const contractObjects = contractJson.objects || [];
   const validObjectSlugs = new Set(contractObjects.map((obj) => obj.slug));
 
+  let pageDetails = [];
   for (const sot of sotData) {
-    // if (!validObjectSlugs.has(sot.object_slug)) {
-    //   throw new Error(
-    //     `Invalid object_slug: ${sot.object_slug}. Must be one of: ${Array.from(
-    //       validObjectSlugs
-    //     ).join(", ")}`
-    //   );
-    // }
-
-    // Validate that status exists for the given object
-    const targetObject = contractObjects.find(
-      (obj) => obj.slug === sot.object_slug
-    );
-    const validStatuses = new Set(
-      (targetObject?.status || []).map((s) => s.slug)
-    );
-
-    // if (!validStatuses.has(sot.status.slug)) {
-    //   throw new Error(
-    //     `Invalid status slug '${sot.status.slug}' for object '${
-    //       sot.object_slug
-    //     }'. Valid statuses are: ${Array.from(validStatuses).join(", ")}`
-    //   );
-    // }
+    if (sot.origination_type == "page") {
+      let updatedWidgets = [];
+      if (sot.widgets && Array.isArray(sot.widgets)) {
+        sot.widgets.map((el) => {
+          let { configs, ...rest } = widgets[el.type || "button"];
+          let { grid_props } = configs;
+          updatedWidgets.push({
+            configs: {
+              ...configs,
+              grid_props: {
+                ...el.grid_props,
+                ...grid_props,
+                i: uuidv4(),
+              },
+            },
+            ...rest,
+            id: uuidv4(),
+          });
+        });
+        pageDetails.push({
+          application_id: appId,
+          display_name: sot.origination.display_name,
+          mode: "create",
+          name: sot.origination.display_name,
+          object_slug: sot.object_slug,
+          show_header: true,
+          type: sot?.origination?.type || "record",
+          widgets: updatedWidgets,
+        });
+      }
+    }
   }
+  pageDetails.map(async (el) => {
+    await handleUsePageTemplate(baseUrl, token, el);
+  });
 
   // Get existing modeling_data or initialize empty
   const existingModelingData = contractJson.modeling_data || {};
   const existingSots = existingModelingData.data || [];
 
   // Add new SOTs with UUIDs while preserving existing ones
-  const newSots = sotData.map((sot) => ({
-    ...sot,
-    id: uuidv4(), // Use provided ID or generate new UUID
-  }));
+  const newSots = sotData.map((sot) => {
+    const newSot = { ...sot, id: uuidv4() };
+    if (newSot.widgets) {
+      delete newSot.widgets;
+    }
+    return newSot;
+  });
 
   // Combine existing and new SOTs
   const updatedSots = [...existingSots, ...newSots];
