@@ -67,9 +67,7 @@ const updateMappedWidget = async (baseUrl, token, pageId, data) => {
       }
     );
     const result = await response.json();
-    console.log("resultresult", result);
-    if (!response.ok) throw result;
-    return result;
+    return result.data;
   } catch (error) {
     throw error;
   }
