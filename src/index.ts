@@ -97,7 +97,12 @@ const server = new McpServer({
       },
       "create-object": {
         description:
-          "Create objects with attributes, statuses, and relationships",
+          "Create structured objects like workitems, tasks, and masters with attributes, statuses, and defined relationships." +
+          "This tool lets you model business entities (e.g., workflows, data objects, master lists) by specifying fields, lifecycle states, and how objects relate to each other." +
+          "⚠️ Relationship Rules:" +
+          "Only two relationship types are supported: oneToMany and manyToOne." +
+          "A task can be related to a workitem using only one task → workitem relationship." +
+          "Only two relationships are allowed between object types.",
         parameters: z.object({
           tenantName: z.string(),
           baseUrl: z.string().url(),
@@ -165,7 +170,55 @@ const server = new McpServer({
       },
       "create-sot": {
         description:
-          "Create SOT (Status origination Tree) The Status Origination Tree (SOT) defines how and from where an object’s status can change. Each status transition must be triggered by one or more originations, which represent the source or mechanism that initiates the transition.",
+          "Create SOT (Status Origination Tree). " +
+          "The SOT defines how and from where an object’s status can change. Each transition is linked to an origination source such as a workflow, automation rule, or page. " +
+          "If `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property. If not explicitly provided, the AI should decide when `origination_type` should be `page` based on the nature of the object and transition context. " +
+          "⚙️ Widget Auto-Generation Rules:\n" +
+          "- If object type is `workitem` or `task`, include:\n" +
+          "  • header, details, comment, activity\n" +
+          "- If object type is for display (e.g., `object`, `master`), include:\n" +
+          "  • header, table, filter, stats, jsonform\n" +
+          "- If collaboration is needed, include:\n" +
+          "  • comment, note, attachment, conversation\n" +
+          "- If automation or tracking is involved, include:\n" +
+          "  • automationLogs, eventLog, progressbar, taskIframe\n" +
+          "- For advanced or custom UI, optionally include:\n" +
+          "  • customComponent, container, richTextEditor, carousel, qrscanner, calendar, map, chart, json\n" +
+          "🧩 Grid Layout Auto-Generation:\n" +
+          "Each widget must include a `grid_props` object for layout control. The AI must auto-generate these dynamically based on widget type and available space.\n" +
+          "- Default layout values:\n" +
+          "  • w: width (max 12)\n" +
+          "  • h: height (1 unit = 15px, calculated based on widget type)\n" +
+          "  • x, y: position on grid (auto-calculated to prevent overlap)\n" +
+          "  • maxW: 12 (fixed), minW: 3\n" +
+          "  • maxH: based on widget content\n" +
+          "  • isResizable: true\n" +
+          "  • static: false\n" +
+          "🖼️ Page Layout Previews (for origination_type = page):\n" +
+          "- WorkItem General Page:\n" +
+          "  ┌───────────────────────────────┐\n" +
+          "  │   [ Stat Widget 1 ]           │\n" +
+          "  │   [ Stat Widget 2 ]           │\n" +
+          "  │   [ Stat Widget 3 ]           │\n" +
+          "  │                               │\n" +
+          "  │   [ Table - Assigned Items ]  │\n" +
+          "  └───────────────────────────────┘\n" +
+          "- WorkItem / Task / Object Record Page:\n" +
+          "  ┌───────────────────────────────┐\n" +
+          "  │       [ Header Widget ]       │\n" +
+          "  │     [ Details Widget ]        │\n" +
+          "  │ [ Comment ]    [ Activity ]   │\n" +
+          "  └───────────────────────────────┘\n" +
+          "- Task / Object General Page:\n" +
+          "  ┌───────────────────────────────┐\n" +
+          "  │       [ Table Widget ]        │\n" +
+          "  └───────────────────────────────┘\n" +
+          "- Object with Full Display Needs:\n" +
+          "  ┌───────────────────────────────┐\n" +
+          "  │  [ Stats ]   [ Filters ]       │\n" +
+          "  │        [ Table Widget ]        │\n" +
+          "  │        [ JSON Form ]           │\n" +
+          "  └───────────────────────────────┘\n",
         parameters: z.object({
           baseUrl: z.string().url(),
           appId: z.string(),
@@ -198,6 +251,60 @@ const server = new McpServer({
                 slug: z.string(),
                 display_name: z.string(),
               }),
+              // ✅ Add widgets only if origination_type is "page"
+              widgets: z
+                .array(
+                  z.object({
+                    type: z.enum([
+                      "activity",
+                      "attachment",
+                      "button",
+                      "calendar",
+                      "carousel",
+                      "chart",
+                      "comment",
+                      "container",
+                      "conversation",
+                      "dropdown",
+                      "file_preview",
+                      "header",
+                      "html_parser",
+                      "iframe",
+                      "json",
+                      "jsonform",
+                      "leaderboard",
+                      "list",
+                      "map",
+                      "page",
+                      "path",
+                      "progressbar",
+                      "qrScanner",
+                      "richTextEditor",
+                      "spacer",
+                      "stats",
+                      "table",
+                      "tabs",
+                      "ticker",
+                      "lits",
+                    ]),
+                    grid_props: z.object({
+                      h: z.number(),
+                      i: z.string(), // unique ID
+                      w: z.number().max(12),
+                      x: z.number(),
+                      y: z.number(),
+                      maxH: z.number().optional(),
+                      maxW: z.number().default(12),
+                      minH: z.number().default(3),
+                      minW: z.number().default(3),
+                      moved: z.boolean().default(false),
+                      static: z.boolean().default(false),
+                      isResizable: z.boolean().default(true),
+                    }),
+                  })
+                )
+                .optional(), // Only present for pages
+              // ✅ Add widgets only if origination_type is "page"
             })
           ),
         }),
@@ -347,7 +454,12 @@ server.tool(
 // create app contract objects, relationships, statuses, and attributes.
 server.tool(
   "create-object",
-  "Create objects with attributes, statuses, and relationships",
+  "Create structured objects like workitems, tasks, and masters with attributes, statuses, and defined relationships." +
+    "This tool lets you model business entities (e.g., workflows, data objects, master lists) by specifying fields, lifecycle states, and how objects relate to each other." +
+    "⚠️ Relationship Rules:" +
+    "Only two relationship types are supported: oneToMany and manyToOne." +
+    "A task can be related to a workitem using only one task → workitem relationship." +
+    "Only two relationships are allowed between object types.",
   {
     tenantName: z.string(),
     baseUrl: z.string().url(),
@@ -449,7 +561,55 @@ server.tool(
 );
 server.tool(
   "create-sot",
-  "Create SOT (Status origination Tree) The Status Origination Tree (SOT) defines how and from where an object's status can change. Each status transition must be triggered by one or more originations, which represent the source or mechanism that initiates the transition. object_slug is the slug of the object to which the SOT belongs.",
+  "Create SOT (Status Origination Tree). " +
+    "The SOT defines how and from where an object’s status can change. Each transition is linked to an origination source such as a workflow, automation rule, or page. " +
+    "If `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property. If not explicitly provided, the AI should decide when `origination_type` should be `page` based on the nature of the object and transition context. " +
+    "⚙️ Widget Auto-Generation Rules:\n" +
+    "- If object type is `workitem` or `task`, include:\n" +
+    "  • header, details, comment, activity\n" +
+    "- If object type is for display (e.g., `object`, `master`), include:\n" +
+    "  • header, table, filter, stats, jsonform\n" +
+    "- If collaboration is needed, include:\n" +
+    "  • comment, note, attachment, conversation\n" +
+    "- If automation or tracking is involved, include:\n" +
+    "  • automationLogs, eventLog, progressbar, taskIframe\n" +
+    "- For advanced or custom UI, optionally include:\n" +
+    "  • customComponent, container, richTextEditor, carousel, qrscanner, calendar, map, chart, json\n" +
+    "🧩 Grid Layout Auto-Generation:\n" +
+    "Each widget must include a `grid_props` object for layout control. The AI must auto-generate these dynamically based on widget type and available space.\n" +
+    "- Default layout values:\n" +
+    "  • w: width (max 12)\n" +
+    "  • h: height (1 unit = 15px, calculated based on widget type)\n" +
+    "  • x, y: position on grid (auto-calculated to prevent overlap)\n" +
+    "  • maxW: 12 (fixed), minW: 3\n" +
+    "  • maxH: based on widget content\n" +
+    "  • isResizable: true\n" +
+    "  • static: false\n" +
+    "🖼️ Page Layout Previews (for origination_type = page):\n" +
+    "- WorkItem General Page:\n" +
+    "  ┌───────────────────────────────┐\n" +
+    "  │   [ Stat Widget 1 ]           │\n" +
+    "  │   [ Stat Widget 2 ]           │\n" +
+    "  │   [ Stat Widget 3 ]           │\n" +
+    "  │                               │\n" +
+    "  │   [ Table - Assigned Items ]  │\n" +
+    "  └───────────────────────────────┘\n" +
+    "- WorkItem / Task / Object Record Page:\n" +
+    "  ┌───────────────────────────────┐\n" +
+    "  │       [ Header Widget ]       │\n" +
+    "  │     [ Details Widget ]        │\n" +
+    "  │ [ Comment ]    [ Activity ]   │\n" +
+    "  └───────────────────────────────┘\n" +
+    "- Task / Object General Page:\n" +
+    "  ┌───────────────────────────────┐\n" +
+    "  │       [ Table Widget ]        │\n" +
+    "  └───────────────────────────────┘\n" +
+    "- Object with Full Display Needs:\n" +
+    "  ┌───────────────────────────────┐\n" +
+    "  │  [ Stats1]   [Stats2]         │\n" +
+    "  │        [ Table Widget ]       │\n" +
+    "  │        [ JSON Form ]          │\n" +
+    "  └───────────────────────────────┘\n",
   {
     baseUrl: z.string().url(),
     appId: z.string(),
@@ -481,7 +641,60 @@ server.tool(
           value: z.string(),
           slug: z.string(),
           display_name: z.string(),
+          type: z.enum(["dashboard", "record"]).optional(), // <-- Add this line
         }),
+        widgets: z
+          .array(
+            z.object({
+              type: z.enum([
+                "activity",
+                "attachment",
+                "button",
+                "calendar",
+                "carousel",
+                "chart",
+                "comment",
+                "container",
+                "conversation",
+                "dropdown",
+                "file_preview",
+                "header",
+                "html_parser",
+                "iframe",
+                "json",
+                "jsonform",
+                "leaderboard",
+                "list",
+                "map",
+                "page",
+                "path",
+                "progressbar",
+                "qrScanner",
+                "richTextEditor",
+                "spacer",
+                "stats",
+                "table",
+                "tabs",
+                "ticker",
+                "lits",
+              ]),
+              grid_props: z.object({
+                h: z.number(),
+                i: z.string(), // unique ID
+                w: z.number().max(12),
+                x: z.number(),
+                y: z.number(),
+                maxH: z.number().optional(),
+                maxW: z.number().default(12),
+                minH: z.number().default(3),
+                minW: z.number().default(3),
+                moved: z.boolean().default(false),
+                static: z.boolean().default(false),
+                isResizable: z.boolean().default(true),
+              }),
+            })
+          )
+          .optional(),
       })
     ),
   },
