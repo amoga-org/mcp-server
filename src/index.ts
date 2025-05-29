@@ -188,10 +188,8 @@ const server = new McpServer({
           "Each widget must include a `grid_props` object for layout control. The AI must auto-generate these dynamically based on widget type and available space.\n" +
           "- Default layout values:\n" +
           "  • w: width (max 12)\n" +
-          "  • h: height (1 unit = 15px, calculated based on widget type)\n" +
+          "  • h: height (calculated based on widget type — 1 grid unit = 14px, so total height in px ÷ 14 = h)\n" +
           "  • x, y: position on grid (auto-calculated to prevent overlap)\n" +
-          "  • maxW: 12 (fixed), minW: 3\n" +
-          "  • maxH: based on widget content\n" +
           "  • isResizable: true\n" +
           "  • static: false\n" +
           "🖼️ Page Layout Previews (for origination_type = page):\n" +
@@ -579,10 +577,8 @@ server.tool(
     "Each widget must include a `grid_props` object for layout control. The AI must auto-generate these dynamically based on widget type and available space.\n" +
     "- Default layout values:\n" +
     "  • w: width (max 12)\n" +
-    "  • h: height (1 unit = 15px, calculated based on widget type)\n" +
+    "  • h: height (calculated based on widget type — 1 grid unit = 14px, so total height in px ÷ 14 = h)\n" +
     "  • x, y: position on grid (auto-calculated to prevent overlap)\n" +
-    "  • maxW: 12 (fixed), minW: 3\n" +
-    "  • maxH: based on widget content\n" +
     "  • isResizable: true\n" +
     "  • static: false\n" +
     "🖼️ Page Layout Previews (for origination_type = page):\n" +
