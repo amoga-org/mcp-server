@@ -1,6 +1,6 @@
 {
     "name": "mcp-server-amogastudio",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "main": "build/index.js",
     "type": "module",
     "bin": "build/index.js",
