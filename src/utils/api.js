@@ -7,7 +7,7 @@ import {
   getDefaultStatuses,
 } from "./helper.js";
 import { v4 as uuidv4 } from "uuid";
-import { widgets } from "./config/widgts.js";
+import { widgets } from "../config/widgets.js";
 const isValidHexColor = (color) =>
   /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
 const defaultStatusColor = "#94A3B8";
@@ -45,8 +45,11 @@ const createPageV1 = async (baseUrl, token, data) => {
       body: JSON.stringify(data),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
     const result = await response.json();
-    // if (!response.ok) throw result;
     return result;
   } catch (error) {
     throw error;
@@ -66,6 +69,10 @@ const updateMappedWidget = async (baseUrl, token, pageId, data) => {
         body: JSON.stringify(data),
       }
     );
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
     const result = await response.json();
     return result.data;
   } catch (error) {

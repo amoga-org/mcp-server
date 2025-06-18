@@ -773,6 +773,8 @@ const leaderboard = {
   configs: {
     display_name: "leaderboard",
     icon: {
+      type: "material-icons-outlined",
+      name: "leaderboard",
       color: "#5f6368",
       svg: "memo",
       style: "solid",
@@ -850,7 +852,14 @@ const list = {
 const map = {
   configs: {
     display_name: "Map",
-    icon: null,
+    icon: {
+      type: "material-icons-outlined",
+      name: "map",
+      color: "#5f6368",
+      svg: "map",
+      style: "solid",
+      version: 1,
+    },
     color: "#2bc0b4",
     type: "map",
     description: "Map Description",
@@ -1133,6 +1142,9 @@ const stats = {
       type: "material-icons-outlined",
       name: "10k",
       color: "#5f6368",
+      svg: "stats",
+      style: "solid",
+      version: 1,
     },
     color: "#FFA500",
     type: "stats",
@@ -1198,6 +1210,9 @@ const table = {
       type: "material-icons-outlined",
       name: "10k",
       color: "#5f6368",
+      svg: "table",
+      style: "solid",
+      version: 1,
     },
     color: "#FFA500",
     description: "table description",
@@ -1327,6 +1342,9 @@ const ticker = {
       type: "material-icons-outlined",
       name: "10k",
       color: "#5f6368",
+      svg: "ticker",
+      style: "solid",
+      version: 1,
     },
     color: "#FFA500",
     type: "ticker",
@@ -1361,7 +1379,6 @@ const ticker = {
   is_active: true,
   widget_version: 1.0,
 };
-
 // Export all widgets
 export const widgets = {
   activity,
@@ -1380,17 +1397,17 @@ export const widgets = {
   iframe,
   json,
   jsonform,
-  //   leaderboard,
+  leaderboard,
   list,
-  //   map,
+  map,
   page,
   path,
   progressbar,
   qrScanner,
   richTextEditor,
   spacer,
-  //   stats,
-  //   table,
+  stats,
+  table,
   tabs,
-  //   ticker,
+  ticker,
 };

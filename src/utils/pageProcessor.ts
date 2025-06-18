@@ -10,7 +10,7 @@ export interface PageData {
   name: string;
   object_slug: string;
   show_header: boolean;
-  type: "record" | "dashboard" | "general";
+  type: "record" | "dashboard";
   widgets: Widget[];
 }
 
