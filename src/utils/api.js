@@ -242,7 +242,7 @@ export const createSotData = async (
 ) => {
   const { token } = await getCrmToken(baseUrl, tenantName);
   // Validate that all object_slugs in sotData exist in the contract
-  const contractObjects = contractJson.objects || [];
+  const contractObjects = contractJson?.contract_json?.objects || [];
   const validObjectSlugs = new Set(contractObjects.map((obj) => obj.slug));
 
   let pageDetails = [];
@@ -784,7 +784,59 @@ export const createAppContract = async (
     });
   });
 
-  // 4. Save the contract with updated objects and preserved forms
+  // 4. Handle existing permissions and add new objects to all roles
+  const existingPermissions = existingContract?.permission || {};
+
+  // Default permission set for new objects
+  const defaultPermission = {
+    pick: true,
+    read: true,
+    assign: true,
+    create: true,
+    delete: true,
+    update: true,
+    release: true,
+  };
+
+  // Create updated permissions
+  let updatedPermissions;
+
+  if (Object.keys(existingPermissions).length > 0) {
+    // Existing permissions found - preserve and extend them
+    updatedPermissions = { ...existingPermissions };
+
+    // Add new objects to all existing roles
+    Object.keys(updatedPermissions).forEach((roleKey) => {
+      const role = updatedPermissions[roleKey];
+
+      // Initialize permission objects if they don't exist
+      if (!role.loco_permission) {
+        role.loco_permission = {};
+      }
+      if (!role.permission_level) {
+        role.permission_level = {};
+      }
+
+      // Add permissions for all objects (existing + new)
+      updatedObjects.forEach((obj) => {
+        if (!role.loco_permission[obj.slug]) {
+          role.loco_permission[obj.slug] = { ...defaultPermission };
+        }
+        if (!role.permission_level[obj.slug]) {
+          role.permission_level[obj.slug] = 40;
+        }
+      });
+    });
+  } else {
+    // No existing permissions - create default administrator role
+    updatedPermissions = rolesPermissions(
+      updatedObjects,
+      "administrator",
+      "administrator"
+    );
+  }
+
+  // 5. Save the contract with updated objects, preserved forms, and updated permissions
   const contractResponse = await fetch(
     `${baseUrl}/api/v1/core/studio/contract/app_meta/${appId}`,
     {
@@ -811,7 +863,7 @@ export const createAppContract = async (
         },
         forms: forms_data,
         actions: existingContract?.actions || [],
-        permission: rolesPermissions(updatedObjects, "admin", "admin"),
+        permission: updatedPermissions,
       }),
     }
   );

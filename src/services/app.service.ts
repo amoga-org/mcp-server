@@ -8,8 +8,9 @@ import {
   DeleteObjectParams,
   CreateObjectParams,
   CreateSotParams,
+  CreateUpdateRolesParams,
+  Permission,
 } from "../types/app.types.js";
-import { SOTData } from "../types/sot.types.js";
 
 // Helper function to get CRM token
 async function getCrmToken(
@@ -273,7 +274,6 @@ function rolesPermissions(objects: any[], roleName: string, slug: string) {
       display_name: roleName,
       loco_permission: loco_permission,
       permission_level: permission_level,
-      mapped_job_titles: [],
     },
   };
 }
@@ -289,12 +289,12 @@ export async function deleteObject(params: DeleteObjectParams): Promise<void> {
       tenantName,
       appId,
     });
-    if (!existingContract?.objects) {
+    if (!existingContract?.contract_json.objects) {
       throw new Error("Could not fetch app contract or no objects found");
     }
 
     // Find the object to delete
-    const objectToDelete = existingContract.objects.find(
+    const objectToDelete = existingContract?.contract_json?.objects.find(
       (obj: ObjectDefinition) =>
         obj.name.toLowerCase() === objectName.toLowerCase()
     );
@@ -306,7 +306,7 @@ export async function deleteObject(params: DeleteObjectParams): Promise<void> {
     }
 
     // Remove the object and its relationships from other objects
-    const updatedObjects = existingContract.objects
+    const updatedObjects = existingContract.contract_json.objects
       .filter(
         (obj: ObjectDefinition) =>
           obj.name.toLowerCase() !== objectName.toLowerCase()
@@ -342,7 +342,11 @@ export async function deleteObject(params: DeleteObjectParams): Promise<void> {
           },
           forms: updatedForms,
           actions: existingContract.actions || [],
-          permission: rolesPermissions(updatedObjects, "administrator", "administrator"),
+          //   permission: rolesPermissions(
+          //     updatedObjects,
+          //     "administrator",
+          //     "administrator"
+          //   ),
         }),
       }
     );
@@ -396,5 +400,150 @@ export async function createSot(params: CreateSotParams): Promise<any> {
     );
   } catch (error: any) {
     throw new Error(`Failed to create SOT: ${error.message}`);
+  }
+}
+
+export async function createUpdateRoles(
+  params: CreateUpdateRolesParams
+): Promise<any> {
+  const { baseUrl, tenantName, appId, roles } = params;
+
+  try {
+    const { token } = await getCrmToken(baseUrl, tenantName);
+
+    // Get existing app contract to know what objects exist and current permissions
+    const contract = await getAppContract({ baseUrl, tenantName, appId });
+
+    // Get existing permissions from contract (preserve existing roles)
+    const existingPermissions = contract?.permission || {};
+
+    // Get existing object slugs
+    const objectSlugs = (contract?.contract_json?.objects || []).map(
+      (obj: ObjectDefinition) => obj.slug
+    );
+
+    // Default permission set
+    const defaultPermission: Permission = {
+      pick: true,
+      read: true,
+      assign: true,
+      create: true,
+      delete: true,
+      update: true,
+      release: true,
+    };
+
+    // Start with all existing permissions
+    const finalPermissions: Record<string, any> = {};
+
+    // First, copy all existing roles
+    Object.keys(existingPermissions).forEach((roleKey) => {
+      const existingRole = existingPermissions[roleKey];
+      finalPermissions[roleKey] = {
+        loco_role: existingRole.loco_role || roleKey,
+        display_name: existingRole.display_name || roleKey,
+        loco_permission: { ...(existingRole.loco_permission || {}) },
+        permission_level: { ...(existingRole.permission_level || {}) },
+        mapped_job_titles: [],
+      };
+    });
+
+    // Then, add or update with new roles
+    roles.forEach((role) => {
+      const existingRole = finalPermissions[role.loco_role];
+
+      finalPermissions[role.loco_role] = {
+        loco_role: role.loco_role,
+        display_name: role.display_name,
+        loco_permission: {
+          ...(existingRole?.loco_permission || {}),
+          ...(role.loco_permission || {}),
+        },
+        permission_level: {
+          ...(existingRole?.permission_level || {}),
+          ...(role.permission_level || {}),
+        },
+        mapped_job_titles: [],
+      };
+    });
+
+    // Now ensure ALL roles have permissions for ALL objects
+    if (objectSlugs.length > 0) {
+      Object.keys(finalPermissions).forEach((roleKey) => {
+        const role = finalPermissions[roleKey];
+
+        // Initialize permission objects if they don't exist
+        if (!role.loco_permission) {
+          role.loco_permission = {};
+        }
+        if (!role.permission_level) {
+          role.permission_level = {};
+        }
+
+        // Ensure every object slug has permissions in this role
+        objectSlugs.forEach((slug: string) => {
+          if (!role.loco_permission[slug]) {
+            role.loco_permission[slug] = { ...defaultPermission };
+          }
+          if (!role.permission_level[slug]) {
+            role.permission_level[slug] = 40;
+          }
+        });
+      });
+    }
+
+    // If no objects exist and no existing roles, create default roles
+    if (
+      objectSlugs.length === 0 &&
+      Object.keys(finalPermissions).length === 0 &&
+      roles.length === 0
+    ) {
+      const defaultRoles = [
+        {
+          loco_role: "administrator",
+          display_name: "Administrator",
+          loco_permission: {},
+          permission_level: {},
+        },
+      ];
+
+      defaultRoles.forEach((role) => {
+        finalPermissions[role.loco_role] = role;
+      });
+    }
+
+    // Update the contract with the final roles
+    const response = await fetch(
+      `${baseUrl}/api/v1/core/studio/contract/roles/${appId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          permission: finalPermissions,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to update roles: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      roles: Object.values(finalPermissions),
+      totalRoles: Object.keys(finalPermissions).length,
+      objectsCount: objectSlugs.length,
+      message: `Successfully created/updated ${
+        Object.keys(finalPermissions).length
+      } role(s) with permissions for ${objectSlugs.length} object(s)`,
+      data: data.data,
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to create/update roles: ${error.message}`);
   }
 }

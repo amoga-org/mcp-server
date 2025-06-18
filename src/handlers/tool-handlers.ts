@@ -11,6 +11,7 @@ import {
   createObject,
   createSot,
   deleteObject,
+  createUpdateRoles,
 } from "../services/app.service.js";
 import {
   CreateAppParams,
@@ -20,6 +21,7 @@ import {
   CreateObjectParams,
   CreateSotParams,
   DeleteObjectParams,
+  CreateUpdateRolesParams,
 } from "../types/app.types.js";
 
 export const toolHandlers = {
@@ -189,6 +191,32 @@ export const toolHandlers = {
           {
             type: "text" as const,
             text: `❌ Failed to delete object: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Create or update RBAC roles
+  "create-update-roles": async (params: CreateUpdateRolesParams) => {
+    try {
+      const result = await createUpdateRoles(params);
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `✅ ${result.message}\n\nRoles processed:\n${result.roles
+              .map((role: any) => `- ${role.display_name} (${role.loco_role})`)
+              .join("\n")}`,
+          },
+        ],
+      };
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ Failed to create/update roles: ${err.message || err}`,
           },
         ],
       };

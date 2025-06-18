@@ -427,3 +427,58 @@ export interface CreateSotParams {
     }>;
   }>;
 }
+
+// RBAC Roles Schema and Interface
+const PermissionSchema = z.object({
+  pick: z.boolean().default(true),
+  read: z.boolean().default(true),
+  assign: z.boolean().default(true),
+  create: z.boolean().default(true),
+  delete: z.boolean().default(true),
+  update: z.boolean().default(true),
+  release: z.boolean().default(true),
+});
+
+const RoleSchema = z.object({
+  display_name: z.string().describe("Display name of the role"),
+  loco_role: z.string().describe("Unique role identifier at app level"),
+  loco_permission: z
+    .record(z.string(), PermissionSchema)
+    .optional()
+    .describe("Object slug to permissions mapping"),
+  permission_level: z
+    .record(z.string(), z.number())
+    .optional()
+    .describe("Permission levels for objects"),
+});
+
+export const CreateUpdateRolesSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  tenantName: z.string().describe("The tenant name"),
+  appId: z.string().describe("The application ID"),
+  roles: z.array(RoleSchema).describe("Array of roles to create or update"),
+});
+
+export interface Permission {
+  pick: boolean;
+  read: boolean;
+  assign: boolean;
+  create: boolean;
+  delete: boolean;
+  update: boolean;
+  release: boolean;
+}
+
+export interface Role {
+  display_name: string;
+  loco_role: string;
+  loco_permission?: Record<string, Permission>;
+  permission_level?: Record<string, number>;
+}
+
+export interface CreateUpdateRolesParams {
+  baseUrl: string;
+  tenantName: string;
+  appId: string;
+  roles: Role[];
+}

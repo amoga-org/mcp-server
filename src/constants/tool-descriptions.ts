@@ -72,4 +72,12 @@ export const TOOL_DESCRIPTIONS = {
     "  └───────────────────────────────┘\n",
 
   DELETE_OBJECT: "Delete an object from the application contract",
+
+  CREATE_UPDATE_ROLES:
+    "Create and update RBAC (Role-Based Access Control) roles for an application. " +
+    "This tool allows you to define roles with specific permissions for each object in the app. " +
+    "Each role must have a unique `loco_role` identifier at the app level, a `display_name` for UI display, " +
+    "and `loco_permission` which maps object slugs to permission sets. " +
+    "Default permissions include: pick, read, assign, create, delete, update, and release. " +
+    "If objects are not present in the app, default roles will be created automatically.",
 } as const;
