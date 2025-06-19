@@ -925,7 +925,11 @@ export const deleteObject = async (baseUrl, tenantName, appId, objectName) => {
         },
         forms: updatedForms,
         actions: existingContract.actions || [],
-        permission: rolesPermissions(updatedObjects, "admin", "admin"),
+        permission: rolesPermissions(
+          updatedObjects,
+          "administrator",
+          "administrator"
+        ),
       }),
     }
   );

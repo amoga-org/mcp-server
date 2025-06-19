@@ -241,6 +241,63 @@ export async function createSotData(
     throw new Error(`Failed to create SOT data: ${error.message}`);
   }
 }
+// Helper function to calculate permission level based on loco_permission
+function calculatePermissionLevel(locoPermission: Permission): number {
+  // No access - all permissions false
+  if (
+    !locoPermission.pick &&
+    !locoPermission.read &&
+    !locoPermission.assign &&
+    !locoPermission.create &&
+    !locoPermission.delete &&
+    !locoPermission.update &&
+    !locoPermission.release
+  ) {
+    return 10; // No access
+  }
+
+  // Read only - only read is true
+  if (
+    !locoPermission.pick &&
+    locoPermission.read &&
+    !locoPermission.assign &&
+    !locoPermission.create &&
+    !locoPermission.delete &&
+    !locoPermission.update &&
+    !locoPermission.release
+  ) {
+    return 20; // Read only
+  }
+
+  // Write - create, read, update but not delete
+  if (
+    locoPermission.pick &&
+    locoPermission.read &&
+    locoPermission.assign &&
+    locoPermission.create &&
+    !locoPermission.delete &&
+    locoPermission.update &&
+    locoPermission.release
+  ) {
+    return 30; // Write
+  }
+
+  // Full access - all permissions true
+  if (
+    locoPermission.pick &&
+    locoPermission.read &&
+    locoPermission.assign &&
+    locoPermission.create &&
+    locoPermission.delete &&
+    locoPermission.update &&
+    locoPermission.release
+  ) {
+    return 40; // Full access
+  }
+
+  // Custom - any other combination
+  return 50; // Custom
+}
 
 // Helper function for roles permissions
 function rolesPermissions(objects: any[], roleName: string, slug: string) {
@@ -407,16 +464,12 @@ export async function createUpdateRoles(
   params: CreateUpdateRolesParams
 ): Promise<any> {
   const { baseUrl, tenantName, appId, roles } = params;
-
   try {
     const { token } = await getCrmToken(baseUrl, tenantName);
-
     // Get existing app contract to know what objects exist and current permissions
     const contract = await getAppContract({ baseUrl, tenantName, appId });
-
     // Get existing permissions from contract (preserve existing roles)
     const existingPermissions = contract?.permission || {};
-
     // Get existing object slugs
     const objectSlugs = (contract?.contract_json?.objects || []).map(
       (obj: ObjectDefinition) => obj.slug
@@ -436,80 +489,220 @@ export async function createUpdateRoles(
     // Start with all existing permissions
     const finalPermissions: Record<string, any> = {};
 
-    // First, copy all existing roles
+    // Case 3: Update existing roles - ensure all objects have permissions
     Object.keys(existingPermissions).forEach((roleKey) => {
       const existingRole = existingPermissions[roleKey];
-      finalPermissions[roleKey] = {
+      const newRole: any = {
         loco_role: existingRole.loco_role || roleKey,
         display_name: existingRole.display_name || roleKey,
+        mapped_job_titles: [],
         loco_permission: { ...(existingRole.loco_permission || {}) },
         permission_level: { ...(existingRole.permission_level || {}) },
-        mapped_job_titles: [],
       };
-    });
 
-    // Then, add or update with new roles
-    roles.forEach((role) => {
-      const existingRole = finalPermissions[role.loco_role];
+      // If objects exist, clean up and ensure permissions match actual objects
+      if (objectSlugs.length > 0) {
+        // Clean up permissions - only keep permissions for objects that exist
+        const cleanedLocoPermission: Record<string, any> = {};
+        const cleanedPermissionLevel: Record<string, any> = {};
 
-      finalPermissions[role.loco_role] = {
-        loco_role: role.loco_role,
-        display_name: role.display_name,
-        loco_permission: {
-          ...(existingRole?.loco_permission || {}),
-          ...(role.loco_permission || {}),
-        },
-        permission_level: {
-          ...(existingRole?.permission_level || {}),
-          ...(role.permission_level || {}),
-        },
-        mapped_job_titles: [],
-      };
-    });
-
-    // Now ensure ALL roles have permissions for ALL objects
-    if (objectSlugs.length > 0) {
-      Object.keys(finalPermissions).forEach((roleKey) => {
-        const role = finalPermissions[roleKey];
-
-        // Initialize permission objects if they don't exist
-        if (!role.loco_permission) {
-          role.loco_permission = {};
-        }
-        if (!role.permission_level) {
-          role.permission_level = {};
-        }
-
-        // Ensure every object slug has permissions in this role
-        objectSlugs.forEach((slug: string) => {
-          if (!role.loco_permission[slug]) {
-            role.loco_permission[slug] = { ...defaultPermission };
+        // Get object mapping for name/slug matching
+        const objectMap = new Map();
+        (contract?.contract_json?.objects || []).forEach(
+          (obj: ObjectDefinition) => {
+            objectMap.set(obj.slug, obj);
+            objectMap.set(obj.name.toLowerCase(), obj);
           }
-          if (!role.permission_level[slug]) {
-            role.permission_level[slug] = 40;
+        );
+
+        // Process existing permissions and match with actual objects
+        Object.keys(newRole.loco_permission).forEach((key) => {
+          const matchedObj =
+            objectMap.get(key) || objectMap.get(key.toLowerCase());
+          if (matchedObj) {
+            cleanedLocoPermission[matchedObj.slug] =
+              newRole.loco_permission[key];
           }
         });
-      });
-    }
 
-    // If no objects exist and no existing roles, create default roles
-    if (
-      objectSlugs.length === 0 &&
-      Object.keys(finalPermissions).length === 0 &&
-      roles.length === 0
-    ) {
-      const defaultRoles = [
-        {
-          loco_role: "administrator",
-          display_name: "Administrator",
-          loco_permission: {},
-          permission_level: {},
-        },
-      ];
+        Object.keys(newRole.permission_level).forEach((key) => {
+          const matchedObj =
+            objectMap.get(key) || objectMap.get(key.toLowerCase());
+          if (matchedObj) {
+            cleanedPermissionLevel[matchedObj.slug] =
+              newRole.permission_level[key];
+          }
+        });
 
-      defaultRoles.forEach((role) => {
-        finalPermissions[role.loco_role] = role;
-      });
+        // Add missing permissions for all existing objects and calculate permission levels
+        objectSlugs.forEach((slug: string) => {
+          if (!cleanedLocoPermission[slug]) {
+            cleanedLocoPermission[slug] = { ...defaultPermission };
+          }
+          // Calculate permission level based on loco_permission if not explicitly provided
+          if (!cleanedPermissionLevel[slug]) {
+            cleanedPermissionLevel[slug] = calculatePermissionLevel(
+              cleanedLocoPermission[slug]
+            );
+          }
+        });
+
+        newRole.loco_permission = cleanedLocoPermission;
+        newRole.permission_level = cleanedPermissionLevel;
+      }
+      finalPermissions[roleKey] = newRole;
+    });
+
+    // Process new roles from the request
+    roles.forEach((role) => {
+      // Skip administrator role - it's already created during app creation
+      if (role.loco_role === "administrator") {
+        if (finalPermissions["administrator"]) {
+          const adminRole = finalPermissions["administrator"];
+          // Merge any provided permissions with existing ones
+          if (role.loco_permission) {
+            adminRole.loco_permission = {
+              ...(adminRole.loco_permission || {}),
+              ...role.loco_permission,
+            };
+          }
+          if (role.permission_level) {
+            adminRole.permission_level = {
+              ...(adminRole.permission_level || {}),
+              ...role.permission_level,
+            };
+          }
+        }
+        return;
+      }
+
+      const existingRole = finalPermissions[role.loco_role];
+      // Base role structure - always include loco_permission and permission_level
+      const newRole: any = {
+        loco_role: role.loco_role,
+        display_name: role.display_name,
+        mapped_job_titles: [],
+        loco_permission: {},
+        permission_level: {},
+      };
+
+      // Case 1: If no objects exist, keep permissions empty
+      if (objectSlugs.length === 0) {
+        // Keep loco_permission and permission_level as empty objects
+        newRole.loco_permission = {};
+        newRole.permission_level = {};
+      } else {
+        // Case 2: Objects exist - merge existing permissions with new ones
+        // Start with existing permissions if role exists
+        if (existingRole) {
+          newRole.loco_permission = { ...(existingRole.loco_permission || {}) };
+          newRole.permission_level = {
+            ...(existingRole.permission_level || {}),
+          };
+        }
+
+        // Merge any provided permissions
+        if (role.loco_permission) {
+          newRole.loco_permission = {
+            ...newRole.loco_permission,
+            ...role.loco_permission,
+          };
+        }
+        if (role.permission_level) {
+          newRole.permission_level = {
+            ...newRole.permission_level,
+            ...role.permission_level,
+          };
+        }
+
+        // Clean up permissions - only keep permissions for objects that exist
+        const cleanedLocoPermission: Record<string, any> = {};
+        const cleanedPermissionLevel: Record<string, any> = {};
+
+        // Get object mapping for name/slug matching
+        const objectMap = new Map();
+        (contract?.contract_json?.objects || []).forEach(
+          (obj: ObjectDefinition) => {
+            objectMap.set(obj.slug, obj);
+            objectMap.set(obj.name.toLowerCase(), obj);
+          }
+        );
+
+        // Process provided permissions and match with actual objects
+        if (role.loco_permission) {
+          Object.keys(role.loco_permission).forEach((key) => {
+            const matchedObj =
+              objectMap.get(key) || objectMap.get(key.toLowerCase());
+            if (matchedObj) {
+              cleanedLocoPermission[matchedObj.slug] =
+                role.loco_permission![key];
+              // Auto-calculate permission level based on loco_permission
+              cleanedPermissionLevel[matchedObj.slug] =
+                calculatePermissionLevel(role.loco_permission![key]);
+            }
+          });
+        }
+
+        // Override with explicitly provided permission levels if any
+        if (role.permission_level) {
+          Object.keys(role.permission_level).forEach((key) => {
+            const matchedObj =
+              objectMap.get(key) || objectMap.get(key.toLowerCase());
+            if (matchedObj) {
+              cleanedPermissionLevel[matchedObj.slug] =
+                role.permission_level![key];
+            }
+          });
+        }
+
+        // Merge with existing permissions if role exists
+        if (existingRole) {
+          Object.keys(existingRole.loco_permission || {}).forEach((key) => {
+            const matchedObj =
+              objectMap.get(key) || objectMap.get(key.toLowerCase());
+            if (matchedObj && !cleanedLocoPermission[matchedObj.slug]) {
+              cleanedLocoPermission[matchedObj.slug] =
+                existingRole.loco_permission[key];
+            }
+          });
+
+          Object.keys(existingRole.permission_level || {}).forEach((key) => {
+            const matchedObj =
+              objectMap.get(key) || objectMap.get(key.toLowerCase());
+            if (matchedObj && !cleanedPermissionLevel[matchedObj.slug]) {
+              cleanedPermissionLevel[matchedObj.slug] =
+                existingRole.permission_level[key];
+            }
+          });
+        }
+
+        // Add missing permissions for all existing objects (add defaults where missing)
+        objectSlugs.forEach((slug: string) => {
+          if (!cleanedLocoPermission[slug]) {
+            cleanedLocoPermission[slug] = { ...defaultPermission };
+          }
+          // Calculate permission level based on loco_permission if not set
+          if (!cleanedPermissionLevel[slug]) {
+            cleanedPermissionLevel[slug] = calculatePermissionLevel(
+              cleanedLocoPermission[slug]
+            );
+          }
+        });
+
+        newRole.loco_permission = cleanedLocoPermission;
+        newRole.permission_level = cleanedPermissionLevel;
+      }
+
+      finalPermissions[role.loco_role] = newRole;
+    });
+
+    // Validate role uniqueness
+    const roleNames = Object.keys(finalPermissions);
+    const uniqueRoleNames = new Set(roleNames);
+    if (roleNames.length !== uniqueRoleNames.size) {
+      throw new Error(
+        "Duplicate loco_role found. Each role must have a unique loco_role identifier."
+      );
     }
 
     // Update the contract with the final roles
