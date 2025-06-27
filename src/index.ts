@@ -23,6 +23,7 @@ import {
   CreateSotSchema,
   DeleteObjectSchema,
   CreateUpdateRolesSchema,
+  CreateAttributeSchema,
 } from "./types/app.types.js";
 
 // Tool handlers
@@ -74,6 +75,10 @@ const server = new McpServer({
       "create-update-roles": {
         description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ROLES,
         parameters: CreateUpdateRolesSchema,
+      },
+      "create-attributes": {
+        description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
+        parameters: CreateAttributeSchema,
       },
     },
   },
@@ -127,6 +132,12 @@ server.tool(
   TOOL_DESCRIPTIONS.CREATE_UPDATE_ROLES,
   CreateUpdateRolesSchema.shape,
   toolHandlers["create-update-roles"]
+);
+server.tool(
+  "create-attributes",
+  TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
+  CreateAttributeSchema.shape,
+  toolHandlers["create-attributes"]
 );
 
 /**

@@ -81,10 +81,12 @@ export const TOOL_DESCRIPTIONS = {
     "Default permissions include: pick, read, assign, create, delete, update, and release. " +
     "If objects are not present in the app, default roles will be created automatically.",
 
-  CREATE_ATTRIBUTE:
+  CREATE_UPDATE_ATTRIBUTE:
     "Create custom attributes for objects in the application. " +
-    "This tool allows you to define fields with specific display names, component types, component subtypes, and unique keys. " +
+    "⚠️ IMPORTANT: The following system attributes are reserved and should NOT be created as they are automatically managed by the system: " +
+    "'status', 'priority', 'Due Date', 'name', and 'assignee'. Attempting to create these will result in an error. " +
+    "\n\nThis tool allows you to define custom fields with specific display names, component types, component subtypes, and unique keys. " +
     "Each attribute will be created with auto-generated unique slugs to prevent conflicts. " +
-    "Supported component types: enumeration (enumeration, status, priority, multiselect), text (string, text, uuid, password, email, comment, instruction, title, Container, richText), number (integer, biginteger, float), boolean (toggle, checkbox), date. " +
+    "Supported component types: enumeration (enumeration, multiselect), text (string, text, uuid, password, email, comment, instruction, title, Container, richText), number (integer, biginteger, float), boolean (toggle, checkbox), date. " +
     "The component_subtype must match one of the valid values for the selected component_type category.",
 } as const;

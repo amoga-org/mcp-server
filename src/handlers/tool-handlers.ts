@@ -22,7 +22,9 @@ import {
   CreateSotParams,
   DeleteObjectParams,
   CreateUpdateRolesParams,
+  CreateAttributeParams,
 } from "../types/app.types.js";
+import { createAttributeHandler } from "./attribute-handler.js";
 
 export const toolHandlers = {
   // Create a new application
@@ -217,6 +219,43 @@ export const toolHandlers = {
           {
             type: "text" as const,
             text: `❌ Failed to create/update roles: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Create or update attributes
+  "create-attributes": async (params: CreateAttributeParams) => {
+    try {
+      const result = await createAttributeHandler.handler(params);
+      if (result.success) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `✅ Successfully created ${
+                params.attributes.length
+              } attributes:\n\n${JSON.stringify(result, null, 2)}`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `❌ Failed to create attributes: ${result.error}`,
+            },
+          ],
+        };
+      }
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ Failed to create attributes: ${err.message || err}`,
           },
         ],
       };
