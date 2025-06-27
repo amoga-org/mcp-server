@@ -80,4 +80,11 @@ export const TOOL_DESCRIPTIONS = {
     "and `loco_permission` which maps object slugs to permission sets. " +
     "Default permissions include: pick, read, assign, create, delete, update, and release. " +
     "If objects are not present in the app, default roles will be created automatically.",
+
+  CREATE_ATTRIBUTE:
+    "Create custom attributes for objects in the application. " +
+    "This tool allows you to define fields with specific display names, component types, component subtypes, and unique keys. " +
+    "Each attribute will be created with auto-generated unique slugs to prevent conflicts. " +
+    "Supported component types: enumeration (enumeration, status, priority, multiselect), text (string, text, uuid, password, email, comment, instruction, title, Container, richText), number (integer, biginteger, float), boolean (toggle, checkbox), date. " +
+    "The component_subtype must match one of the valid values for the selected component_type category.",
 } as const;

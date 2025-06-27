@@ -482,3 +482,28 @@ export interface CreateUpdateRolesParams {
   appId: string;
   roles: Role[];
 }
+
+// Create Attribute Schema and Interface
+export const CreateAttributeSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  tenantName: z.string().describe("The tenant name"),
+  attributes: z.array(
+    z.object({
+      display_name: z.string().describe("Display name of the attribute"),
+      component_type: z.enum(["enumeration", "text", "number", "boolean", "date"]).describe("Component type category for the attribute"),
+      component_subtype: z.string().describe("Specific component subtype within the category"),
+      key: z.string().describe("Unique key for the attribute"),
+    })
+  ).describe("Array of attributes to create"),
+});
+
+export interface CreateAttributeParams {
+  baseUrl: string;
+  tenantName: string;
+  attributes: Array<{
+    display_name: string;
+    component_type: "enumeration" | "text" | "number" | "boolean" | "date";
+    component_subtype: string;
+    key: string;
+  }>;
+}
