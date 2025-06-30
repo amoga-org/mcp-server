@@ -13,7 +13,7 @@ import {
 } from "../types/app.types.js";
 
 // Helper function to get CRM token
-async function getCrmToken(
+export async function getCrmToken(
   baseUrl: string,
   tenantName: string
 ): Promise<{ token: string; coreApp: any }> {

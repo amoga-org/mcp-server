@@ -25,6 +25,7 @@ import {
   CreateUpdateRolesSchema,
   CreateAttributeSchema,
 } from "./types/app.types.js";
+import { DummyDataSchema } from "./schemas/dummy-data-schema.js";
 
 // Tool handlers
 import { toolHandlers } from "./handlers/tool-handlers.js";
@@ -79,6 +80,10 @@ const server = new McpServer({
       "create-attributes": {
         description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
         parameters: CreateAttributeSchema,
+      },
+      "add-dummy-data": {
+        description: TOOL_DESCRIPTIONS.ADD_DUMMY_DATA,
+        parameters: DummyDataSchema,
       },
     },
   },
@@ -138,6 +143,12 @@ server.tool(
   TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
   CreateAttributeSchema.shape,
   toolHandlers["create-attributes"]
+);
+server.tool(
+  "add-dummy-data",
+  TOOL_DESCRIPTIONS.ADD_DUMMY_DATA,
+  DummyDataSchema.shape,
+  toolHandlers["add-dummy-data"]
 );
 
 /**

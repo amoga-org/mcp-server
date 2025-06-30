@@ -3,6 +3,7 @@
  * This file contains all the tool implementation handlers
  */
 
+import { z } from "zod";
 import {
   createApp,
   getAllApps,
@@ -25,6 +26,8 @@ import {
   CreateAttributeParams,
 } from "../types/app.types.js";
 import { createAttributeHandler } from "./attribute-handler.js";
+import { createDummyDataHandler } from "./dummy-data-handler.js";
+import { DummyDataSchema } from "../schemas/dummy-data-schema.js";
 
 export const toolHandlers = {
   // Create a new application
@@ -260,5 +263,24 @@ export const toolHandlers = {
         ],
       };
     }
+  },
+
+  // Add dummy data to tables
+  "add-dummy-data": async (params: z.infer<typeof DummyDataSchema>) => {
+    const result = await createDummyDataHandler.handler(params);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: result.success
+            ? `✅ ${result.message}\n\nResults:\n${JSON.stringify(
+                result.results,
+                null,
+                2
+              )}`
+            : `❌ Failed to generate dummy data: ${result.error}`,
+        },
+      ],
+    };
   },
 };

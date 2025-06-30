@@ -1,6 +1,36 @@
 /**
  * Tool descriptions for the MCP server
- * This file contains all the descriptions for the various tools to keep the main index.ts clean
+ * This file contains all the descriptions for t  ADD_DUMMY_DAT  ADD_DUMMY_DATA:
+    "⚠️ IMPORTANT: Must run GET_APP_CONTRACT first to fetch application structure!\n\n" +
+    "Process for adding dummy data:\n" +
+    "1. GET_APP_CONTRACT must be called first to:\n" +
+    "   • Get object definitions and relationships\n" +
+    "   • Retrieve status and priority configurations from maps\n" +
+    "   • Understand attribute types and constraints\n\n" +
+    "2. Only then ADD_DUMMY_DATA will:\n" +
+    "   • Use the fetched contract to generate appropriate data\n" +
+    "   • Create records with correct status values (using loco_name from maps)\n" +
+    "   • Set proper priority levels based on object configuration\n" +
+    "   • Generate contextual data for all attributes\n\n" +
+    "3. Data insertion:\n" +
+    "   • Validates against contract rules\n" +
+    "   • Posts to correct endpoints\n" +
+    "   • Returns creation status\n\n" +
+    "⚠️ Attempting to run this tool without first running GET_APP_CONTRACT will result in an error.", "Tool to generate and insert dummy data into application tables. Process:\n" +
+    "1. First runs GET_APP_CONTRACT to fetch and analyze the complete application contract:\n" +
+    "   • Understands object structure and relationships\n" +
+    "   • Maps available status options (using loco_name from maps)\n" +
+    "   • Identifies priority configurations\n" +
+    "   • Analyzes attribute definitions and constraints\n" +
+    "2. Then generates contextual dummy data:\n" +
+    "   • Uses object maps for correct status and priority values\n" +
+    "   • Creates realistic data for each attribute type\n" +
+    "   • Respects system fields (status, priority, Due Date, name, assignee)\n" +
+    "3. Finally inserts the generated records:\n" +
+    "   • Validates data against contract rules\n" +
+    "   • Posts to appropriate API endpoints\n" +
+    "   • Returns success/failure status for each record\n" +
+    "⚠️ Note: System attributes are populated using values from object maps (loco_name), falling back to defaults if not defined.",ious tools to keep the main index.ts clean
  */
 
 export const TOOL_DESCRIPTIONS = {
@@ -10,7 +40,8 @@ export const TOOL_DESCRIPTIONS = {
 
   DELETE_APP: "Delete an application from the backend system",
 
-  GET_APP_CONTRACT: "Fetch all objects in an app contract and their details",
+  GET_APP_CONTRACT:
+    "Fetch all objects in an app contract and their details. This tool must be run first before using ADD_DUMMY_DATA to ensure proper understanding of the application structure and object configurations.",
 
   CREATE_OBJECT:
     "Create structured objects like workitems, tasks, and masters with attributes, statuses, and defined relationships. " +
@@ -89,4 +120,11 @@ export const TOOL_DESCRIPTIONS = {
     "Each attribute will be created with auto-generated unique slugs to prevent conflicts. " +
     "Supported component types: enumeration (enumeration, multiselect), text (string, text, uuid, password, email, comment, instruction, title, Container, richText), number (integer, biginteger, float), boolean (toggle, checkbox), date. " +
     "The component_subtype must match one of the valid values for the selected component_type category.",
+
+  ADD_DUMMY_DATA:
+    "Add AI-generated dummy data to tables based on object schema and attribute types. " +
+    "First fetches the complete app contract to understand object structure, status maps, and attribute configurations. " +
+    "Then generates realistic test data using the contract's object maps for status and priority values (loco_name). " +
+    "Generates realistic test data for each attribute while respecting system attributes. " +
+    "⚠️ Note: System attributes (status, priority, Due Date, name, assignee) will be populated using appropriate values from the contract's object maps, falling back to default values if not defined.",
 } as const;
