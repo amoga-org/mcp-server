@@ -26,10 +26,15 @@ import {
   CreateUpdateRolesParams,
   CreateAttributeParams,
   PublishAppParams,
+  CheckPublishStatusParams,
 } from "../types/app.types.js";
 import { createAttributeHandler } from "./attribute-handler.js";
 import { createDummyDataHandler } from "./dummy-data-handler.js";
 import { DummyDataSchema } from "../schemas/dummy-data-schema.js";
+import {
+  monitorPublishStatus,
+  formatStatusOutput,
+} from "../services/publish-status.service.js";
 
 export const toolHandlers = {
   // Create a new application
@@ -304,6 +309,66 @@ export const toolHandlers = {
           {
             type: "text" as const,
             text: `❌ ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Check publish status
+  "check-publish-status": async (params: CheckPublishStatusParams) => {
+    try {
+      // Validate parameters
+      if (!params.baseUrl || !params.identifier || !params.tenantName) {
+        throw new Error(
+          "Missing required parameters: baseUrl, identifier, and tenantName are required"
+        );
+      }
+
+      const result = await monitorPublishStatus(
+        params.baseUrl,
+        params.identifier,
+        params.tenantName,
+        params.maxChecks || 20,
+        params.intervalSeconds || 30
+      );
+
+      const formattedStatus = formatStatusOutput(result.status.status);
+
+      // Format versions as simple text instead of JSON
+      const formatVersionText = (versions: Record<string, string>) => {
+        if (!versions || typeof versions !== "object") {
+          return "  No version information available";
+        }
+        return Object.entries(versions)
+          .map(([component, version]) => `  ${component}: ${version || "N/A"}`)
+          .join("\n");
+      };
+
+      const responseText = result.isComplete
+        ? `✅ Application publishing completed after ${
+            result.checksPerformed
+          } checks!\n\n${formattedStatus}\n\nCurrent Version:\n${formatVersionText(
+            result.status.current_version
+          )}\n\nDeployed Version:\n${formatVersionText(
+            result.status.deployed_version
+          )}`
+        : `⏳ Application publishing not yet complete after ${result.checksPerformed} checks.\n\n${formattedStatus}\n\nPublishing is considered complete when all components show one of: 'completed', 'success', 'not_started', '' (empty - also completed), or 'failure'.`;
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: responseText,
+          },
+        ],
+      };
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ Error checking publish status: ${err.message || err}`,
           },
         ],
       };

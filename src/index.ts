@@ -25,6 +25,7 @@ import {
   CreateUpdateRolesSchema,
   CreateAttributeSchema,
   PublishAppSchema,
+  CheckPublishStatusSchema,
 } from "./types/app.types.js";
 import { DummyDataSchema } from "./schemas/dummy-data-schema.js";
 
@@ -89,6 +90,10 @@ const server = new McpServer({
       "publish-app": {
         description: TOOL_DESCRIPTIONS.PUBLISH_APP,
         parameters: PublishAppSchema,
+      },
+      "check-publish-status": {
+        description: TOOL_DESCRIPTIONS.CHECK_PUBLISH_STATUS,
+        parameters: CheckPublishStatusSchema,
       },
     },
   },
@@ -160,6 +165,12 @@ server.tool(
   TOOL_DESCRIPTIONS.PUBLISH_APP,
   PublishAppSchema.shape,
   toolHandlers["publish-app"]
+);
+server.tool(
+  "check-publish-status",
+  TOOL_DESCRIPTIONS.CHECK_PUBLISH_STATUS,
+  CheckPublishStatusSchema.shape,
+  toolHandlers["check-publish-status"]
 );
 
 /**

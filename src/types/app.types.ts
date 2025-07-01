@@ -28,6 +28,33 @@ export interface Attribute {
   component_type: "text" | "enumeration" | "date" | "boolean" | "number";
 }
 
+export interface AppPublishStatus {
+  current_version: {
+    App_meta: string;
+    Datastore: string;
+    Forms: string;
+    Workflow: string;
+    Pages: string;
+    Automation: string;
+  };
+  deployed_version: {
+    App_meta: string;
+    Datastore: string;
+    Forms: string;
+    Workflow: string;
+    Pages: string;
+    Automation: string;
+  };
+  status: {
+    App_meta: string;
+    Datastore?: string;
+    Forms: string;
+    Workflow: string;
+    Pages: string;
+    Automation: string;
+  };
+}
+
 export interface ObjectStatus {
   name: string;
   color?: string;
@@ -525,4 +552,31 @@ export interface PublishAppParams {
   baseUrl: string;
   appId: string;
   tenantName: string;
+}
+
+// Check Publish Status Schema and Interface
+export const CheckPublishStatusSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  identifier: z
+    .string()
+    .describe("The application identifier to check status for"),
+  tenantName: z.string().describe("The tenant name"),
+  maxChecks: z
+    .number()
+    .optional()
+    .default(20)
+    .describe("Maximum number of status checks (default: 20)"),
+  intervalSeconds: z
+    .number()
+    .optional()
+    .default(30)
+    .describe("Interval between checks in seconds (default: 30)"),
+});
+
+export interface CheckPublishStatusParams {
+  baseUrl: string;
+  identifier: string;
+  tenantName: string;
+  maxChecks?: number;
+  intervalSeconds?: number;
 }

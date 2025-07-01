@@ -1,6 +1,13 @@
 /**
  * Tool descriptions for the MCP server
- * This file contains all the descriptions for ADD_DUMMY_DATA,CREATE_SOT,CREATE_UPDATE_ROLES and ADD_DUMMY_DATA:
+ * This file contains all t  CREATE_SOT:
+    "Step 9 in app creation workflow: Create SOT (Status Origination Tree) for all origination types. " +
+    "⚠️ Run after GET_APP_CONTRACT (step 8) has re-fetched the published app contract.\n\n" +
+    "⚠️ PREREQUISITES: \n" +
+    "1. PUBLISH_APP must be completed (step 6)\n" +
+    "2. CHECK_PUBLISH_STATUS must confirm all components are deployed (step 7)\n" +
+    "3. GET_APP_CONTRACT must be re-run to fetch updated contract (step 8)\n\n" +
+    "The SOT defines how and from where an object's status can change. Each transition is linked to an origination source.",riptions for ADD_DUMMY_DATA,CREATE_SOT,CREATE_UPDATE_ROLES and ADD_DUMMY_DATA:
     "⚠️ IMPORTANT: Must run GET_APP_CONTRACT first to fetch application structure!\n\n" +
     "Process for adding dummy data:\n" +
     "1. GET_APP_CONTRACT must be called first to:\n" +
@@ -43,19 +50,22 @@ export const TOOL_DESCRIPTIONS = {
     "4. GET_APP_CONTRACT - Fetch application contract to understand structure\n" +
     "5. CREATE_UPDATE_ROLES - Set up user roles and permissions for the objects\n" +
     "6. PUBLISH_APP - Publish the application to make it available\n" +
-    "7. CREATE_SOT - Define status transitions and workflows\n" +
-    // "8. ADD_DUMMY_DATA - Add test data (only for 'master' and 'object' type objects)\n\n" +
-    "⚠️ IMPORTANT: Each step depends on the previous one. GET_APP_CONTRACT must be run before roles, SOT, and dummy data operations.",
+    "7. CHECK_PUBLISH_STATUS - Monitor publishing status until all components are deployed\n" +
+    "8. GET_APP_CONTRACT - Re-fetch contract after publishing (for SOT and dummy data)\n" +
+    "9. CREATE_SOT - Define status transitions and workflows\n" +
+    "10. ADD_DUMMY_DATA - Add test data to objects (only for 'master' and 'object' type objects)\n\n" +
+    "⚠️ IMPORTANT: Each step depends on the previous one. Steps 7-8 ensure the app is fully published before proceeding with SOT and dummy data operations.",
 
   GET_APPS: "Get all applications for a tenant",
 
   DELETE_APP: "Delete an application from the backend system",
 
   GET_APP_CONTRACT:
-    "Step 4 in app creation workflow: Fetch all objects in an app contract and their details. " +
-    "⚠️ Run after CREATE_OBJECT and before CREATE_UPDATE_ROLES.\n\n" +
-    "This tool MUST be run before using CREATE_UPDATE_ROLES, CREATE_SOT, and ADD_DUMMY_DATA to ensure proper understanding of the application structure and object configurations. " +
-    "It provides essential contract data that subsequent tools depend on for validation and proper operation.",
+    "Step 4 & 8 in app creation workflow: Fetch all objects in an app contract and their details. " +
+    "⚠️ Run after CREATE_OBJECT (step 4) and again after CHECK_PUBLISH_STATUS confirms publishing is complete (step 8).\n\n" +
+    "First run (Step 4): Provides essential contract data for CREATE_UPDATE_ROLES to understand object structure and permissions.\n" +
+    "Second run (Step 8): Re-fetches the updated contract after publishing to ensure CREATE_SOT and ADD_DUMMY_DATA have the latest object configurations, status maps, and attribute definitions. " +
+    "This tool MUST be run before using CREATE_UPDATE_ROLES, CREATE_SOT, and ADD_DUMMY_DATA to ensure proper understanding of the application structure and object configurations.",
 
   CREATE_OBJECT:
     "Step 3 in app creation workflow: Create structured objects like workitems, tasks, and masters with attributes, statuses, and defined relationships. " +
@@ -136,8 +146,8 @@ export const TOOL_DESCRIPTIONS = {
 
   CREATE_UPDATE_ROLES:
     "Step 5 in app creation workflow: Create and update RBAC (Role-Based Access Control) roles for an application. " +
-    "⚠️ Run after GET_APP_CONTRACT and before PUBLISH_APP.\n\n" +
-    "⚠️ PREREQUISITE: GET_APP_CONTRACT must be run first to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
+    "⚠️ Run after GET_APP_CONTRACT (step 4) and before PUBLISH_APP (step 6).\n\n" +
+    "⚠️ PREREQUISITE: GET_APP_CONTRACT must be run first (step 4) to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
     "This tool allows you to define roles with specific permissions for each object in the app. " +
     "Each role must have a unique `loco_role` identifier at the app level, a `display_name` for UI display, " +
     "and `loco_permission` which maps object slugs to permission sets. " +
@@ -155,9 +165,13 @@ export const TOOL_DESCRIPTIONS = {
     "The component_subtype must match one of the valid values for the selected component_type category.",
 
   ADD_DUMMY_DATA:
-    "Step 8 in app creation workflow: Add AI-generated dummy data to tables based on object schema and attribute types. " +
+    "Step 10 in app creation workflow: Add AI-generated dummy data to tables based on object schema and attribute types. " +
     "⚠️ Run after CREATE_SOT as the final step in app setup.\n\n" +
-    "⚠️ AUTO-FETCH CONTRACT: GET_APP_CONTRACT will be automatically run first to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
+    "⚠️ PREREQUISITES:\n" +
+    "1. All previous steps (1-9) must be completed successfully\n" +
+    "2. CHECK_PUBLISH_STATUS must confirm publishing is complete\n" +
+    "3. GET_APP_CONTRACT must have been re-run after publishing to fetch updated contract\n\n" +
+    "⚠️ AUTO-FETCH CONTRACT: If GET_APP_CONTRACT hasn't been run recently, it will be automatically executed first to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
     "⚠️ OBJECT TYPE RESTRICTION: This tool ONLY works with 'master' and 'object' type objects. It will skip workitems, tasks, and other object types.\n\n" +
     "Then generates realistic test data using the contract's object maps for status and priority values (loco_name). " +
     "Generates realistic test data for each attribute while respecting system attributes. " +
@@ -165,7 +179,24 @@ export const TOOL_DESCRIPTIONS = {
 
   PUBLISH_APP:
     "Step 6 in app creation workflow: Publish an application using the app ID and base URL. " +
-    "⚠️ Run after CREATE_UPDATE_ROLES and before CREATE_SOT.\n\n" +
-    "This will make the application available for use and is required before creating SOT (Status Origination Tree). " +
-    "Publishing ensures the application is properly deployed and ready for status transition configurations.",
+    "⚠️ Run after CREATE_UPDATE_ROLES and before CHECK_PUBLISH_STATUS.\n\n" +
+    "This will initiate the application deployment process and make the application available for use. " +
+    "After publishing, you must run CHECK_PUBLISH_STATUS to monitor and ensure all components are successfully deployed " +
+    "before proceeding with SOT (Status Origination Tree) creation and dummy data generation.",
+
+  CHECK_PUBLISH_STATUS:
+    "Step 7 in app creation workflow: Check if application publishing process is completed by monitoring deployment status. " +
+    "⚠️ Run after PUBLISH_APP and before re-running GET_APP_CONTRACT.\n\n" +
+    "This tool checks the publication status of various app components (App_meta, Datastore, Forms, Workflow, Pages, Automation) " +
+    "by polling the API endpoint up to 20 times every 30 seconds until all components show completion status.\n\n" +
+    "Status Values:\n" +
+    "• 'completed' - Component is successfully deployed\n" +
+    "• 'not_started' - Component deployment hasn't begun\n" +
+    "• '' (empty string) - Component is completed (shown as 'completed' to user)\n" +
+    "• 'failure' - Component deployment failed\n" +
+    "• 'in_progress' - Component is currently being deployed\n" +
+    "• 'queued' - Component is waiting to be deployed\n\n" +
+    "The tool returns the final status and indicates whether the entire application publishing process is complete. " +
+    "Publishing is considered complete when all component statuses are one of: 'completed', 'success', 'not_started', '' (empty), or 'failure'. " +
+    "⚠️ NEXT STEPS: Once publishing is complete, run GET_APP_CONTRACT again to fetch the updated contract, then proceed with CREATE_SOT and ADD_DUMMY_DATA.",
 } as const;
