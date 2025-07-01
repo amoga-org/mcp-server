@@ -1,13 +1,13 @@
 /**
  * Tool descriptions for the MCP server
- * This file contains all the descriptions for t  ADD_DUMMY_DAT  ADD_DUMMY_DATA:
+ * This file contains all the descriptions for ADD_DUMMY_DATA,CREATE_SOT,CREATE_UPDATE_ROLES and ADD_DUMMY_DATA:
     "⚠️ IMPORTANT: Must run GET_APP_CONTRACT first to fetch application structure!\n\n" +
     "Process for adding dummy data:\n" +
     "1. GET_APP_CONTRACT must be called first to:\n" +
     "   • Get object definitions and relationships\n" +
     "   • Retrieve status and priority configurations from maps\n" +
     "   • Understand attribute types and constraints\n\n" +
-    "2. Only then ADD_DUMMY_DATA will:\n" +
+    "2. Only then ADD_DUMMY_DATA,CREATE_SOT and CREATE_UPDATE_ROLES will:\n" +
     "   • Use the fetched contract to generate appropriate data\n" +
     "   • Create records with correct status values (using loco_name from maps)\n" +
     "   • Set proper priority levels based on object configuration\n" +
@@ -41,7 +41,7 @@ export const TOOL_DESCRIPTIONS = {
   DELETE_APP: "Delete an application from the backend system",
 
   GET_APP_CONTRACT:
-    "Fetch all objects in an app contract and their details. This tool must be run first before using ADD_DUMMY_DATA to ensure proper understanding of the application structure and object configurations.",
+    "Fetch all objects in an app contract and their details. This tool must be run first before using ADD_DUMMY_DATA , CREATE_SOT and CREATE_UPDATE_ROLES to ensure proper understanding of the application structure and object configurations.",
 
   CREATE_OBJECT:
     "Create structured objects like workitems, tasks, and masters with attributes, statuses, and defined relationships. " +
@@ -53,6 +53,7 @@ export const TOOL_DESCRIPTIONS = {
 
   CREATE_SOT:
     "Create SOT (Status Origination Tree). " +
+    "First fetches the complete app contract to understand object structure, status maps, and attribute configurations. " +
     "The SOT defines how and from where an object's status can change. Each transition is linked to an origination source such as a workflow, automation rule, or page. " +
     "If `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property. If not explicitly provided, the AI should decide when `origination_type` should be `page` based on the nature of the object and transition context. " +
     "- `record`: All widgets applicable to the object type are allowed (e.g., header, iframe, comment, activity, jsonform, attachments, etc.), including `stats` and `table` if appropriate.\n" +
@@ -106,6 +107,7 @@ export const TOOL_DESCRIPTIONS = {
 
   CREATE_UPDATE_ROLES:
     "Create and update RBAC (Role-Based Access Control) roles for an application. " +
+    "First fetches the complete app contract to understand object structure, status maps, and attribute configurations. " +
     "This tool allows you to define roles with specific permissions for each object in the app. " +
     "Each role must have a unique `loco_role` identifier at the app level, a `display_name` for UI display, " +
     "and `loco_permission` which maps object slugs to permission sets. " +
