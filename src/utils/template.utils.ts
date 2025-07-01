@@ -15,7 +15,6 @@ export const handleUsePageTemplate = async (
   try {
     const { widgets, ...metaData } = pageData;
     const createResponse = await createPageV1(baseUrl, token, metaData);
-    console.log("Create page response:", createResponse);
 
     if (createResponse.status === 1) {
       await updateMappedWidget(baseUrl, token, createResponse.data.id, {
@@ -23,7 +22,6 @@ export const handleUsePageTemplate = async (
       });
     }
   } catch (error) {
-    console.error("Error in handleUsePageTemplate:", error);
     throw error;
   }
 };

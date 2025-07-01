@@ -56,7 +56,6 @@ export async function createSOT(
 
     // Note: We would need to implement an updateAppContract function
     // or use the existing API endpoint to save the updated contract
-    console.log("Contract updated with SOT data:", contract);
   } catch (error: any) {
     throw new Error(`Failed to create SOT: ${error.message}`);
   }

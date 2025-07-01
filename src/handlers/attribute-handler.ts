@@ -324,9 +324,6 @@ export const createAttributeHandler = {
         );
 
         if (existsInTenant) {
-          console.log(
-            `Skipping attribute "${attr.display_name}" (key: ${attr.key}) - already exists at tenant level`
-          );
           return false;
         }
 

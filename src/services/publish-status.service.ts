@@ -44,7 +44,6 @@ export const checkPublishStatus = async (
 
     return result.data;
   } catch (error) {
-    console.error("Error checking publish status:", error);
     throw error;
   }
 };

@@ -28,10 +28,8 @@ export const createPageV1 = async <T>(
     });
 
     const result = await response.json();
-    console.log("Create page result:", result);
     return result;
   } catch (error) {
-    console.error("Error in createPageV1:", error);
     throw error;
   }
 };
@@ -74,12 +72,10 @@ export const updateMappedWidget = async <T extends WidgetType>(
     });
 
     const result = await response.json();
-    console.log("Update widget result:", result);
 
     if (!response.ok) throw result;
     return result;
   } catch (error) {
-    console.error("Error in updateMappedWidget:", error);
     throw error;
   }
 };
