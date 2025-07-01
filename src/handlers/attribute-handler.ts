@@ -1,7 +1,9 @@
 import { AttributePayload } from "../types/attribute.types.js";
-import { createAttributeBatch } from "../services/attribute.service.js";
+import {
+  createAttributeBatch,
+  getAttributes,
+} from "../services/attribute.service.js";
 import { getCrmToken } from "../utils/api.js";
-import { APIError } from "../types/api.types.js";
 
 const typeMetaData = {
   enumeration: [
@@ -216,6 +218,9 @@ const typeMetaData = {
     includeShift: "",
     firstAttribute: {},
     secondAttribute: {},
+    data_type: "datetime",
+    type_strapi: "datetime",
+    component:"calendar",
   },
 };
 
@@ -306,11 +311,45 @@ export const createAttributeHandler = {
       // Get token for authentication
       const { token } = await getCrmToken(params.baseUrl, params.tenantName);
 
-      // Validate attributes against reserved system attributes
-      validateAttributes(params.attributes);
+      // Get all existing attributes at tenant level
+      const allAvailableAttributes = await getAttributes(params.baseUrl, token);
+
+      // Filter out attributes that already exist
+      const attributesToCreate = params.attributes.filter((attr) => {
+        const existsInTenant = Object.keys(allAvailableAttributes).some(
+          (existingKey) =>
+            existingKey.toLowerCase() === attr.key.toLowerCase() ||
+            allAvailableAttributes[existingKey]?.display_name?.toLowerCase() ===
+              attr.display_name.toLowerCase()
+        );
+
+        if (existsInTenant) {
+          console.log(
+            `Skipping attribute "${attr.display_name}" (key: ${attr.key}) - already exists at tenant level`
+          );
+          return false;
+        }
+
+        return true;
+      });
+
+      // If no attributes to create, return early
+      if (attributesToCreate.length === 0) {
+        return {
+          success: true,
+          message:
+            "All attributes already exist at tenant level. No new attributes created.",
+          skipped: params.attributes.map((attr) => ({
+            display_name: attr.display_name,
+            key: attr.key,
+            reason: "Already exists at tenant level",
+          })),
+          data: [],
+        };
+      }
 
       // Convert input attributes to full attribute payloads using metadata
-      const attributePayloads: AttributePayload[] = params.attributes.map(
+      const attributePayloads: AttributePayload[] = attributesToCreate.map(
         (attr) => {
           // Find the metadata based on component_type and component_subtype
           let metadata: any = {};
@@ -380,8 +419,28 @@ export const createAttributeHandler = {
         token,
         attributePayloads
       );
+
+      // Calculate skipped attributes for reporting
+      const skippedAttributes = params.attributes.filter((attr) => {
+        return !attributesToCreate.some(
+          (toCreate) => toCreate.key === attr.key
+        );
+      });
+
       return {
         success: true,
+        message: `Successfully created ${attributesToCreate.length} attribute(s). ${skippedAttributes.length} attribute(s) already existed and were skipped.`,
+        created: attributesToCreate.map((attr) => ({
+          display_name: attr.display_name,
+          key: attr.key,
+          component_type: attr.component_type,
+          component_subtype: attr.component_subtype,
+        })),
+        skipped: skippedAttributes.map((attr) => ({
+          display_name: attr.display_name,
+          key: attr.key,
+          reason: "Already exists at tenant level",
+        })),
         data: result,
       };
     } catch (error) {

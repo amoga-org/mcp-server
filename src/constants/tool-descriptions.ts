@@ -34,17 +34,32 @@
  */
 
 export const TOOL_DESCRIPTIONS = {
-  CREATE_APP: "Create a new application and update the backend system",
+  CREATE_APP:
+    "Create a new application and update the backend system.\n\n" +
+    "📋 REQUIRED WORKFLOW: When creating an app, follow this exact sequence:\n" +
+    "1. CREATE_APP - Creates the basic application structure\n" +
+    "2. CREATE_ATTRIBUTES - Define custom attributes for objects (optional but recommended)\n" +
+    "3. CREATE_OBJECT - Create objects using the defined attributes\n" +
+    "4. GET_APP_CONTRACT - Fetch application contract to understand structure\n" +
+    "5. CREATE_UPDATE_ROLES - Set up user roles and permissions for the objects\n" +
+    "6. PUBLISH_APP - Publish the application to make it available\n" +
+    "7. CREATE_SOT - Define status transitions and workflows\n" +
+    // "8. ADD_DUMMY_DATA - Add test data (only for 'master' and 'object' type objects)\n\n" +
+    "⚠️ IMPORTANT: Each step depends on the previous one. GET_APP_CONTRACT must be run before roles, SOT, and dummy data operations.",
 
   GET_APPS: "Get all applications for a tenant",
 
   DELETE_APP: "Delete an application from the backend system",
 
   GET_APP_CONTRACT:
-    "Fetch all objects in an app contract and their details. This tool must be run first before using ADD_DUMMY_DATA , CREATE_SOT and CREATE_UPDATE_ROLES to ensure proper understanding of the application structure and object configurations.",
+    "Step 4 in app creation workflow: Fetch all objects in an app contract and their details. " +
+    "⚠️ Run after CREATE_OBJECT and before CREATE_UPDATE_ROLES.\n\n" +
+    "This tool MUST be run before using CREATE_UPDATE_ROLES, CREATE_SOT, and ADD_DUMMY_DATA to ensure proper understanding of the application structure and object configurations. " +
+    "It provides essential contract data that subsequent tools depend on for validation and proper operation.",
 
   CREATE_OBJECT:
-    "Create structured objects like workitems, tasks, and masters with attributes, statuses, and defined relationships. " +
+    "Step 3 in app creation workflow: Create structured objects like workitems, tasks, and masters with attributes, statuses, and defined relationships. " +
+    "⚠️ Run after CREATE_APP and CREATE_ATTRIBUTES, before CREATE_UPDATE_ROLES.\n\n" +
     "This tool lets you model business entities (e.g., workflows, data objects, master lists) by specifying fields, lifecycle states, and how objects relate to each other. " +
     "⚠️ Relationship Rules: " +
     "Only two relationship types are supported: oneToMany and manyToOne. " +
@@ -52,10 +67,24 @@ export const TOOL_DESCRIPTIONS = {
     "Only two relationships are allowed between object types.",
 
   CREATE_SOT:
-    "Create SOT (Status Origination Tree). " +
-    "First fetches the complete app contract to understand object structure, status maps, and attribute configurations. " +
-    "The SOT defines how and from where an object's status can change. Each transition is linked to an origination source such as a workflow, automation rule, or page. " +
-    "If `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property. If not explicitly provided, the AI should decide when `origination_type` should be `page` based on the nature of the object and transition context. " +
+    "Step 7 in app creation workflow: Create SOT (Status Origination Tree) for all origination types. " +
+    "⚠️ Run after PUBLISH_APP as the application must be published first.\n\n" +
+    "⚠️ PREREQUISITES: \n" +
+    "1. PUBLISH_APP must be run first to make the application available\n" +
+    "2. GET_APP_CONTRACT will be automatically run first to understand object structure if not already done\n\n" +
+    "The SOT defines how and from where an object's status can change. Each transition is linked to an origination source. " +
+    "Supported origination types include:\n" +
+    "• workflow - Status changes through workflow processes\n" +
+    "• automation - Automated status transitions based on rules\n" +
+    "• actions - Manual action-triggered status changes\n" +
+    "• template_email_whatsApp - Status changes via email/WhatsApp templates\n" +
+    "• template_pdf - PDF template-based status transitions\n" +
+    "• create_form - Form creation triggers status changes\n" +
+    "• page - UI page interactions (requires widget layout generation)\n" +
+    "• navbar_and_roles - Navigation and role-based status changes\n" +
+    "• dashboard - Dashboard-based status transitions\n\n" +
+    "🖥️ PAGE ORIGINATION TYPE - SPECIAL HANDLING:\n" +
+    "When `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property. " +
     "- `record`: All widgets applicable to the object type are allowed (e.g., header, iframe, comment, activity, jsonform, attachments, etc.), including `stats` and `table` if appropriate.\n" +
     "- `dashboard`: Only `stats` and `table` widgets must be included. No other widgets are allowed.\n" +
     "⚙️ Widget Auto-Generation Rules:\n" +
@@ -106,8 +135,9 @@ export const TOOL_DESCRIPTIONS = {
   DELETE_OBJECT: "Delete an object from the application contract",
 
   CREATE_UPDATE_ROLES:
-    "Create and update RBAC (Role-Based Access Control) roles for an application. " +
-    "First fetches the complete app contract to understand object structure, status maps, and attribute configurations. " +
+    "Step 5 in app creation workflow: Create and update RBAC (Role-Based Access Control) roles for an application. " +
+    "⚠️ Run after GET_APP_CONTRACT and before PUBLISH_APP.\n\n" +
+    "⚠️ PREREQUISITE: GET_APP_CONTRACT must be run first to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
     "This tool allows you to define roles with specific permissions for each object in the app. " +
     "Each role must have a unique `loco_role` identifier at the app level, a `display_name` for UI display, " +
     "and `loco_permission` which maps object slugs to permission sets. " +
@@ -115,7 +145,8 @@ export const TOOL_DESCRIPTIONS = {
     "If objects are not present in the app, default roles will be created automatically.",
 
   CREATE_UPDATE_ATTRIBUTE:
-    "Create custom attributes for objects in the application. " +
+    "Step 2 in app creation workflow: Create custom attributes for objects in the application. " +
+    "⚠️ Run after CREATE_APP and before CREATE_OBJECT.\n\n" +
     "⚠️ IMPORTANT: The following system attributes are reserved and should NOT be created as they are automatically managed by the system: " +
     "'status', 'priority', 'Due Date', 'name', and 'assignee'. Attempting to create these will result in an error. " +
     "\n\nThis tool allows you to define custom fields with specific display names, component types, component subtypes, and unique keys. " +
@@ -124,9 +155,17 @@ export const TOOL_DESCRIPTIONS = {
     "The component_subtype must match one of the valid values for the selected component_type category.",
 
   ADD_DUMMY_DATA:
-    "Add AI-generated dummy data to tables based on object schema and attribute types. " +
-    "First fetches the complete app contract to understand object structure, status maps, and attribute configurations. " +
+    "Step 8 in app creation workflow: Add AI-generated dummy data to tables based on object schema and attribute types. " +
+    "⚠️ Run after CREATE_SOT as the final step in app setup.\n\n" +
+    "⚠️ AUTO-FETCH CONTRACT: GET_APP_CONTRACT will be automatically run first to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
+    "⚠️ OBJECT TYPE RESTRICTION: This tool ONLY works with 'master' and 'object' type objects. It will skip workitems, tasks, and other object types.\n\n" +
     "Then generates realistic test data using the contract's object maps for status and priority values (loco_name). " +
     "Generates realistic test data for each attribute while respecting system attributes. " +
     "⚠️ Note: System attributes (status, priority, Due Date, name, assignee) will be populated using appropriate values from the contract's object maps, falling back to default values if not defined.",
+
+  PUBLISH_APP:
+    "Step 6 in app creation workflow: Publish an application using the app ID and base URL. " +
+    "⚠️ Run after CREATE_UPDATE_ROLES and before CREATE_SOT.\n\n" +
+    "This will make the application available for use and is required before creating SOT (Status Origination Tree). " +
+    "Publishing ensures the application is properly deployed and ready for status transition configurations.",
 } as const;

@@ -487,14 +487,20 @@ export interface CreateUpdateRolesParams {
 export const CreateAttributeSchema = z.object({
   baseUrl: z.string().url().describe("The base URL of the backend system"),
   tenantName: z.string().describe("The tenant name"),
-  attributes: z.array(
-    z.object({
-      display_name: z.string().describe("Display name of the attribute"),
-      component_type: z.enum(["enumeration", "text", "number", "boolean", "date"]).describe("Component type category for the attribute"),
-      component_subtype: z.string().describe("Specific component subtype within the category"),
-      key: z.string().describe("Unique key for the attribute"),
-    })
-  ).describe("Array of attributes to create"),
+  attributes: z
+    .array(
+      z.object({
+        display_name: z.string().describe("Display name of the attribute"),
+        component_type: z
+          .enum(["enumeration", "text", "number", "boolean", "date"])
+          .describe("Component type category for the attribute"),
+        component_subtype: z
+          .string()
+          .describe("Specific component subtype within the category"),
+        key: z.string().describe("Unique key for the attribute"),
+      })
+    )
+    .describe("Array of attributes to create"),
 });
 
 export interface CreateAttributeParams {
@@ -506,4 +512,17 @@ export interface CreateAttributeParams {
     component_subtype: string;
     key: string;
   }>;
+}
+
+// Publish App Schema and Interface
+export const PublishAppSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  appId: z.string().describe("The application ID to publish"),
+  tenantName: z.string().describe("The tenant name"),
+});
+
+export interface PublishAppParams {
+  baseUrl: string;
+  appId: string;
+  tenantName: string;
 }

@@ -86,3 +86,21 @@ export const createAttributeBatch = async (
     throw handleError(error);
   }
 };
+
+export const getAttributes = async (
+  baseUrl: string,
+  token: string
+): Promise<Record<string, any>> => {
+  try {
+    const client = createClient(baseUrl, token);
+    const response = await client.get("/api/v1/core/studio/loco/attributes");
+
+    const attributesArray = response.data.data || [];
+
+    return Object.fromEntries(
+      attributesArray.map((obj: any) => [obj.key, obj])
+    );
+  } catch (error) {
+    throw handleError(error);
+  }
+};

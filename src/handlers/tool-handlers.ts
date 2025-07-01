@@ -13,6 +13,7 @@ import {
   createSot,
   deleteObject,
   createUpdateRoles,
+  publishApp,
 } from "../services/app.service.js";
 import {
   CreateAppParams,
@@ -24,6 +25,7 @@ import {
   DeleteObjectParams,
   CreateUpdateRolesParams,
   CreateAttributeParams,
+  PublishAppParams,
 } from "../types/app.types.js";
 import { createAttributeHandler } from "./attribute-handler.js";
 import { createDummyDataHandler } from "./dummy-data-handler.js";
@@ -282,5 +284,29 @@ export const toolHandlers = {
         },
       ],
     };
+  },
+
+  // Publish application
+  "publish-app": async (params: PublishAppParams) => {
+    try {
+      const result = await publishApp(params);
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `✅ ${result.message}`,
+          },
+        ],
+      };
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ ${err.message || err}`,
+          },
+        ],
+      };
+    }
   },
 };

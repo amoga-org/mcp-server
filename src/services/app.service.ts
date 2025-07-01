@@ -10,6 +10,7 @@ import {
   CreateSotParams,
   CreateUpdateRolesParams,
   Permission,
+  PublishAppParams,
 } from "../types/app.types.js";
 
 // Helper function to get CRM token
@@ -738,5 +739,59 @@ export async function createUpdateRoles(
     };
   } catch (error: any) {
     throw new Error(`Failed to create/update roles: ${error.message}`);
+  }
+}
+
+export async function publishApp(params: PublishAppParams): Promise<{
+  success: boolean;
+  message: string;
+  data?: any;
+}> {
+  const { baseUrl, appId, tenantName } = params;
+
+  const { token } = await getCrmToken(baseUrl, tenantName);
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/v1/core/studio/app/publish/${appId}`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = `Failed to publish application: ${response.status} ${response.statusText}`;
+
+      try {
+        const errorData = await response.json();
+        if (errorData?.message) {
+          errorMessage += ` - ${errorData.message}`;
+        }
+      } catch (parseError) {
+        // If we can't parse the error response, just use the basic error message
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      message: `Application ${appId} published successfully`,
+      data,
+    };
+  } catch (error: any) {
+    if (error.message?.includes("Failed to publish application:")) {
+      // Re-throw our custom error messages
+      throw error;
+    }
+
+    // Handle other types of errors (network errors, etc.)
+    throw new Error(`Failed to publish application: ${error.message || error}`);
   }
 }

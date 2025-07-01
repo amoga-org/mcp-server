@@ -24,6 +24,7 @@ import {
   DeleteObjectSchema,
   CreateUpdateRolesSchema,
   CreateAttributeSchema,
+  PublishAppSchema,
 } from "./types/app.types.js";
 import { DummyDataSchema } from "./schemas/dummy-data-schema.js";
 
@@ -84,6 +85,10 @@ const server = new McpServer({
       "add-dummy-data": {
         description: TOOL_DESCRIPTIONS.ADD_DUMMY_DATA,
         parameters: DummyDataSchema,
+      },
+      "publish-app": {
+        description: TOOL_DESCRIPTIONS.PUBLISH_APP,
+        parameters: PublishAppSchema,
       },
     },
   },
@@ -149,6 +154,12 @@ server.tool(
   TOOL_DESCRIPTIONS.ADD_DUMMY_DATA,
   DummyDataSchema.shape,
   toolHandlers["add-dummy-data"]
+);
+server.tool(
+  "publish-app",
+  TOOL_DESCRIPTIONS.PUBLISH_APP,
+  PublishAppSchema.shape,
+  toolHandlers["publish-app"]
 );
 
 /**
