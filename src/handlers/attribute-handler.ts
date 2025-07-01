@@ -220,7 +220,7 @@ const typeMetaData = {
     secondAttribute: {},
     data_type: "datetime",
     type_strapi: "datetime",
-    component:"calendar",
+    component: "calendar",
   },
 };
 
