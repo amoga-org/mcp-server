@@ -580,3 +580,135 @@ export interface CheckPublishStatusParams {
   maxChecks?: number;
   intervalSeconds?: number;
 }
+
+// Generate Workflow Schema and Interface
+export const GenerateWorkflowSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  appId: z.string().describe("The application ID to generate workflow for"),
+  appName: z
+    .string()
+    .optional()
+    .describe(
+      "The application name (optional - will be fetched from app contract if not provided)"
+    ),
+  tenantName: z.string().describe("The tenant name"),
+  caseObjects: z
+    .array(
+      z.object({
+        name: z.string().describe("Name of the workitem object"),
+        slug: z.string().describe("Slug of the workitem object"),
+      })
+    )
+    .optional()
+    .describe(
+      "Array of workitem objects to create workflows for (optional - will be fetched from app contract if not provided). ONLY objects with type 'workitem' are valid for workflow generation."
+    ),
+});
+
+export interface GenerateWorkflowParams {
+  baseUrl: string;
+  appId: string;
+  appName?: string;
+  tenantName: string;
+  caseObjects?: Array<{
+    name: string;
+    slug: string;
+  }>;
+}
+
+// Create Automation Schema and Interface
+const CreateAutomationBaseSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  appId: z.string().describe("The application ID to create automation for"),
+  tenantName: z.string().describe("The tenant name"),
+  email: z
+    .string()
+    .email()
+    .describe("Email address of the user creating the automation"),
+  name: z.string().describe("Name of the automation"),
+  triggerType: z
+    .enum(["object", "core", "schedule", "webhook"])
+    .describe("Type of trigger for the automation"),
+
+  // Object trigger specific fields
+  objectSlug: z
+    .string()
+    .optional()
+    .describe(
+      "Slug of the object to automate (required when triggerType is 'object' or for core events)"
+    ),
+  crudEvent: z
+    .enum(["created", "updated", "deleted"])
+    .optional()
+    .describe(
+      "CRUD event to trigger on (required when triggerType is 'object')"
+    ),
+
+  // Core trigger specific fields
+  coreEventName: z
+    .string()
+    .optional()
+    .describe(
+      "Core event name (e.g., 'import', 'export', 'sync') for core triggers"
+    ),
+
+  // Schedule trigger specific fields
+  cronExpression: z
+    .string()
+    .optional()
+    .describe(
+      "Cron expression for schedule triggers (e.g., '*/5 * * * *' for every 5 minutes, '0 0 * * *' for daily)"
+    ),
+  // Script configuration
+  scriptDescription: z
+    .string()
+    .describe(
+      "Comprehensive description including: 1) What the script should do, 2) Which utility functions to import and use, 3) Business logic flow, 4) Error handling requirements, 5) Integration patterns needed (email, database, external APIs, etc.)"
+    ),
+  customScript: z
+    .string()
+    .optional()
+    .describe(
+      "Custom Python script code (if not provided, AI will generate based on scriptDescription)"
+    ),
+});
+
+export { CreateAutomationBaseSchema };
+
+export const CreateAutomationSchema = CreateAutomationBaseSchema.refine(
+  (data) => {
+    // Validation for object triggers
+    if (data.triggerType === "object") {
+      return data.objectSlug && data.crudEvent;
+    }
+    // Validation for core triggers
+    if (data.triggerType === "core") {
+      return data.objectSlug; // Object slug is required as task_type
+    }
+    // Validation for schedule triggers
+    if (data.triggerType === "schedule") {
+      return data.cronExpression;
+    }
+    return true;
+  },
+  {
+    message:
+      "Missing required fields: object triggers need objectSlug and crudEvent, core triggers need objectSlug, schedule triggers need cronExpression",
+    path: ["triggerType"],
+  }
+);
+
+export interface CreateAutomationParams {
+  baseUrl: string;
+  appId: string;
+  tenantName: string;
+  email: string;
+  name: string;
+  triggerType: "object" | "core" | "schedule" | "webhook";
+  objectSlug?: string;
+  crudEvent?: "created" | "updated" | "deleted";
+  coreEventName?: string;
+  cronExpression?: string;
+  scriptDescription: string; // Comprehensive description including what to do, which utils to use, business logic, error handling, and integration patterns
+  customScript?: string;
+}

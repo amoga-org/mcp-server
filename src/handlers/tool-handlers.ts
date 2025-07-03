@@ -27,6 +27,8 @@ import {
   CreateAttributeParams,
   PublishAppParams,
   CheckPublishStatusParams,
+  GenerateWorkflowParams,
+  CreateAutomationParams,
 } from "../types/app.types.js";
 import { createAttributeHandler } from "./attribute-handler.js";
 import { createDummyDataHandler } from "./dummy-data-handler.js";
@@ -35,6 +37,8 @@ import {
   monitorPublishStatus,
   formatStatusOutput,
 } from "../services/publish-status.service.js";
+import { generateWorkflows } from "../services/workflow.service.js";
+import { createAutomation } from "../services/automation.service.js";
 
 export const toolHandlers = {
   // Create a new application
@@ -369,6 +373,214 @@ export const toolHandlers = {
           {
             type: "text" as const,
             text: `❌ Error checking publish status: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Generate workflows
+  "generate-workflow": async (params: GenerateWorkflowParams) => {
+    try {
+      // Validate required parameters
+      if (!params.baseUrl || !params.appId || !params.tenantName) {
+        throw new Error(
+          "Missing required parameters: baseUrl, appId, and tenantName are required"
+        );
+      }
+
+      const result = await generateWorkflows(params);
+
+      const successfulCases = result.results.filter((r: any) => r.success);
+      const failedCases = result.results.filter((r: any) => !r.success);
+
+      let responseText = `🔄 Workflow Generation Complete!\n\n`;
+      responseText += `📊 Summary:\n`;
+      responseText += `  • App Name: ${result.appName}\n`;
+      responseText += `  • Total Cases: ${result.totalProcessed}\n`;
+      responseText += `  • Successful: ${result.successful}\n`;
+      responseText += `  • Failed: ${result.failed}\n\n`;
+
+      if (successfulCases.length > 0) {
+        responseText += `✅ Successfully Generated Workflows:\n`;
+        successfulCases.forEach((item: any) => {
+          responseText += `  • ${item.caseObject.name} (${item.caseObject.slug})\n`;
+          if (item.deployment?.deploymentId) {
+            responseText += `    - Deployment ID: ${item.deployment.deploymentId}\n`;
+          }
+        });
+        responseText += `\n`;
+      }
+
+      if (failedCases.length > 0) {
+        responseText += `❌ Failed Workflows:\n`;
+        failedCases.forEach((item: any) => {
+          responseText += `  • ${item.caseObject.name} (${item.caseObject.slug}): ${item.error}\n`;
+        });
+        responseText += `\n`;
+      }
+
+      responseText += `🎯 Workflows have been deployed to Flowable engine and configuration saved to application level.\n\n`;
+
+      // Add publishing information
+      if (result.publishing?.attempted) {
+        if (result.publishing.success) {
+          responseText += `� Automatic App Publishing:\n`;
+          responseText += `  ✅ Application has been automatically published after successful workflow generation!\n`;
+          responseText += `  📋 Next Steps: Run CHECK_PUBLISH_STATUS to monitor deployment progress.\n\n`;
+        } else {
+          responseText += `⚠️ Automatic App Publishing:\n`;
+          responseText += `  ❌ Failed to automatically publish the application.\n`;
+          responseText += `  Error: ${
+            result.publishing.result?.error || "Unknown error"
+          }\n`;
+          responseText += `  🔧 Manual Action Required: Run PUBLISH_APP manually.\n\n`;
+        }
+      } else if (result.failed > 0) {
+        responseText += `⚠️ Publishing Skipped:\n`;
+        responseText += `  Some workflows failed, so automatic publishing was skipped.\n`;
+        responseText += `  Fix workflow issues before publishing.\n\n`;
+      }
+
+      responseText += `📝 Note: Only workitem-type objects are processed for workflow generation.`;
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: responseText,
+          },
+        ],
+      };
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ Error generating workflows: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Create automation
+  "create-automation": async (params: CreateAutomationParams) => {
+    try {
+      // Validate required parameters
+      if (
+        !params.baseUrl ||
+        !params.appId ||
+        !params.tenantName ||
+        !params.email ||
+        !params.name ||
+        !params.triggerType
+      ) {
+        throw new Error(
+          "Missing required parameters: baseUrl, appId, tenantName, email, name, and triggerType are required"
+        );
+      }
+
+      // Validate trigger type specific parameters
+      if (params.triggerType === "object") {
+        if (!params.objectSlug || !params.crudEvent) {
+          throw new Error(
+            "Object slug and CRUD event are required for object triggers"
+          );
+        }
+      } else if (params.triggerType === "core") {
+        if (!params.objectSlug) {
+          throw new Error(
+            "Object slug is required for core triggers (as task_type)"
+          );
+        }
+      } else if (params.triggerType === "schedule") {
+        if (!params.cronExpression) {
+          throw new Error(
+            "Cron expression is required for schedule triggers (e.g., '*/5 * * * *' for every 5 minutes)"
+          );
+        }
+      }
+
+      const result = await createAutomation(params);
+
+      let responseText = `🤖 Automation Created Successfully!\n\n`;
+      responseText += `📋 Automation Details:\n`;
+      responseText += `  • Name: ${params.name}\n`;
+      responseText += `  • Trigger Type: ${params.triggerType}\n`;
+
+      if (params.triggerType === "object") {
+        responseText += `  • Object: ${params.objectSlug}\n`;
+        responseText += `  • Event: ${params.crudEvent}\n`;
+      } else if (params.triggerType === "core") {
+        responseText += `  • Object: ${params.objectSlug}\n`;
+        responseText += `  • Core Event: ${params.coreEventName || "import"}\n`;
+      } else if (params.triggerType === "schedule") {
+        responseText += `  • Schedule: ${
+          params.cronExpression || "0 0 * * * (daily at midnight)"
+        }\n`;
+      }
+
+      if (result.automation?.id) {
+        responseText += `  • Automation ID: ${result.automation.id}\n`;
+      }
+
+      responseText += `\n🐍 Script Configuration:\n`;
+      if (params.scriptDescription) {
+        responseText += `  • Description: ${params.scriptDescription}\n`;
+      }
+      responseText += `  • Language: Python\n`;
+      responseText += `  • Template: Auto-generated with logging and payload access\n\n`;
+
+      responseText += `🚀 Automation Features:\n`;
+      responseText += `  • Automatic trigger detection\n`;
+      responseText += `  • Access to payload and tenant data\n`;
+      responseText += `  • Built-in logging functions (log, error, warn, debug)\n`;
+      responseText += `  • Ability to make API calls and process data\n\n`;
+
+      switch (params.triggerType) {
+        case "object":
+          responseText += `📝 Next Steps:\n`;
+          responseText += `  • Test the automation by performing ${params.crudEvent} operations on ${params.objectSlug} objects\n`;
+          responseText += `  • Check automation logs for execution details\n`;
+          responseText += `  • Modify the script if needed to customize behavior\n`;
+          break;
+        case "schedule":
+          responseText += `📅 Schedule Configuration:\n`;
+          responseText += `  • Default: Daily at midnight (0 0 * * *)\n`;
+          responseText += `  • Modify the cron expression in the automation settings if needed\n`;
+          break;
+        case "webhook":
+          responseText += `🔗 Webhook Configuration:\n`;
+          responseText += `  • Webhook URL will be generated automatically by the system\n`;
+          responseText += `  • Use the webhook URL to trigger this automation via HTTP POST requests\n`;
+          responseText += `  • Webhook payload will be available in the script as 'payload' variable\n`;
+          responseText += `  • Perfect for integrating with external services and APIs\n`;
+          break;
+        case "core":
+          responseText += `⚙️ System Event Configuration:\n`;
+          responseText += `  • Triggers on core system events (${
+            params.coreEventName || "import"
+          })\n`;
+          responseText += `  • Associated with object: ${params.objectSlug}\n`;
+          responseText += `  • Monitor automation logs for execution details\n`;
+          break;
+      }
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: responseText,
+          },
+        ],
+      };
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ Error creating automation: ${err.message || err}`,
           },
         ],
       };

@@ -26,6 +26,9 @@ import {
   CreateAttributeSchema,
   PublishAppSchema,
   CheckPublishStatusSchema,
+  GenerateWorkflowSchema,
+  CreateAutomationSchema,
+  CreateAutomationBaseSchema,
 } from "./types/app.types.js";
 import { DummyDataSchema } from "./schemas/dummy-data-schema.js";
 
@@ -94,6 +97,14 @@ const server = new McpServer({
       "check-publish-status": {
         description: TOOL_DESCRIPTIONS.CHECK_PUBLISH_STATUS,
         parameters: CheckPublishStatusSchema,
+      },
+      "generate-workflow": {
+        description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
+        parameters: GenerateWorkflowSchema,
+      },
+      "create-automation": {
+        description: TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
+        parameters: CreateAutomationSchema,
       },
     },
   },
@@ -171,6 +182,18 @@ server.tool(
   TOOL_DESCRIPTIONS.CHECK_PUBLISH_STATUS,
   CheckPublishStatusSchema.shape,
   toolHandlers["check-publish-status"]
+);
+server.tool(
+  "generate-workflow",
+  TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
+  GenerateWorkflowSchema.shape,
+  toolHandlers["generate-workflow"]
+);
+server.tool(
+  "create-automation",
+  TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
+  CreateAutomationBaseSchema.shape,
+  toolHandlers["create-automation"]
 );
 
 /**

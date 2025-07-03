@@ -199,4 +199,86 @@ export const TOOL_DESCRIPTIONS = {
     "The tool returns the final status and indicates whether the entire application publishing process is complete. " +
     "Publishing is considered complete when all component statuses are one of: 'completed', 'success', 'not_started', '' (empty), or 'failure'. " +
     "⚠️ NEXT STEPS: Once publishing is complete, run GET_APP_CONTRACT again to fetch the updated contract, then proceed with CREATE_SOT and ADD_DUMMY_DATA.",
+
+  GENERATE_WORKFLOW:
+    "Generate and deploy workflows for workitem-type objects ONLY, then automatically publish the application. " +
+    "This tool creates CMMN (Case Management Model and Notation) workflows specifically for objects with type 'workitem' and deploys them to the Flowable engine.\n\n" +
+    "Process:\n" +
+    "1. Fetches app contract to get app name and workitem objects (if not provided)\n" +
+    "2. Validates that objects are workitem-type (type: 'workitem') only\n" +
+    "3. Generates CMMN XML for each workitem object based on the object structure\n" +
+    "4. Deploys the workflow to Flowable engine via multipart form upload\n" +
+    "5. Saves workflow configuration data to the application level\n" +
+    "6. 🚀 AUTOMATIC PUBLISHING: If all workflows are generated successfully, automatically publishes the application\n\n" +
+    "⚠️ PREREQUISITES:\n" +
+    "• Application must have workitem-type objects created (type: 'workitem' ONLY)\n" +
+    "• Valid authentication token required\n\n" +
+    "🔒 STRICT VALIDATION:\n" +
+    "• Only objects with type 'workitem' are processed\n" +
+    "• Objects, tasks, masters, etc. are excluded\n" +
+    "• Manual workitem object validation against app contract\n\n" +
+    "🚀 AUTOMATIC PUBLISHING:\n" +
+    "• Publishes app automatically when ALL workflows succeed\n" +
+    "• Skips publishing if ANY workflow fails\n" +
+    "• Provides clear status of both workflow generation AND publishing\n\n" +
+    "📋 OPTIONAL PARAMETERS:\n" +
+    "• appName: Will be fetched from app contract if not provided\n" +
+    "• caseObjects: Will be auto-discovered from app contract if not provided (filters for type: 'workitem' only)\n\n" +
+    "📝 NEXT STEPS AFTER SUCCESS:\n" +
+    "• Run CHECK_PUBLISH_STATUS to monitor deployment progress\n" +
+    "• Then proceed with CREATE_SOT and ADD_DUMMY_DATA",
+
+  CREATE_AUTOMATION:
+    "Create intelligent automation flows with AI-generated Python scripts based on comprehensive descriptions. " +
+    "This tool uses artificial intelligence to analyze your requirements and automatically generate the appropriate code, imports, and business logic.\n\n" +
+    "🤖 AI-POWERED SCRIPT GENERATION:\n" +
+    "• **Smart Import Detection**: AI analyzes your description to import only required utility functions\n" +
+    "• **Pattern Recognition**: Automatically detects patterns like email notifications, object creation, file processing, etc.\n" +
+    "• **Logic Generation**: Creates complete business logic based on your description\n" +
+    "• **Error Handling**: Includes comprehensive error handling and logging\n" +
+    "• **Best Practices**: Implements coding best practices and proper documentation\n\n" +
+    "📝 SCRIPT DESCRIPTION FORMAT:\n" +
+    "Provide a comprehensive description including:\n" +
+    "1. **What the script should do**: Clear explanation of business logic\n" +
+    "2. **Which utilities to use**: Email, notifications, database, file processing, etc.\n" +
+    "3. **Integration patterns**: External APIs, Teams alerts, PDF generation\n" +
+    "4. **Error handling requirements**: How to handle failures\n" +
+    "5. **Flow details**: Step-by-step automation workflow\n\n" +
+    "🔧 TRIGGER TYPES:\n" +
+    "1. **Object**: Automate CRUD events (created, updated, deleted) on specific objects\n" +
+    "   • Requires: objectSlug, crudEvent\n" +
+    "2. **Core**: Start workflows based on system events (import, export, sync)\n" +
+    "   • Requires: objectSlug (as task_type)\n" +
+    "   • Optional: coreEventName (default: 'import')\n" +
+    "3. **Schedule**: Execute workflows on custom schedules (cron-based)\n" +
+    "   • Optional: cronExpression (default: '0 0 * * *')\n" +
+    "4. **Webhook**: Trigger workflows via external webhook calls\n" +
+    "   • No additional parameters required\n\n" +
+    "🛠️ AI-DETECTED UTILITY FUNCTIONS:\n" +
+    "Based on your description, AI automatically imports and uses:\n" +
+    "• **Object Operations**: create_object, update_object, delete_object, get_objects\n" +
+    "• **Bulk Operations**: bulk_create_object, bulk_update_object, bulk_import_data\n" +
+    "• **Email & Notifications**: send_mail_sendgrid, send_mail_smtp, send_push_notification, send_socket\n" +
+    "• **File Processing**: html_to_pdf_base64_or_url, convert_data_to_file_url\n" +
+    "• **External Integration**: external_api, execute_mysql_db_query\n" +
+    "• **Teams Integration**: send_teams_alert_message\n" +
+    "• **App Management**: get_tenant_app_details, get_tenant_connections\n\n" +
+    "� AI SCRIPT FEATURES:\n" +
+    "• Smart pattern detection from description keywords\n" +
+    "• Automatic error handling with user notifications\n" +
+    "• Comprehensive logging with different levels (info, error, warn, debug)\n" +
+    "• Real-time UI updates via socket messages\n" +
+    "• Professional email templates with styling\n" +
+    "• PDF report generation with object data\n" +
+    "• External API integration patterns\n\n" +
+    "🎯 EXAMPLE DESCRIPTIONS:\n" +
+    "• 'When a workitem is created, send a welcome email to the user and create a follow-up task'\n" +
+    "• 'On object update, query external database, generate PDF report, and send Teams notification'\n" +
+    "• 'Schedule daily: fetch data from external API, bulk update objects, and email summary report'\n" +
+    "• 'Webhook trigger: validate incoming data, create objects, and notify users via push notifications'\n\n" +
+    "⚠️ PREREQUISITES:\n" +
+    "• Application must exist and be accessible\n" +
+    "• For object/core triggers: Target object must exist in app contract\n" +
+    "• Valid authentication token required\n" +
+    "• Provide detailed scriptDescription for optimal AI generation",
 } as const;
