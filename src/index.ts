@@ -29,6 +29,8 @@ import {
   GenerateWorkflowSchema,
   CreateAutomationSchema,
   CreateAutomationBaseSchema,
+  CreateNavbarSchema,
+  GetAppPagesSchema,
 } from "./types/app.types.js";
 import { DummyDataSchema } from "./schemas/dummy-data-schema.js";
 
@@ -105,6 +107,14 @@ const server = new McpServer({
       "create-automation": {
         description: TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
         parameters: CreateAutomationSchema,
+      },
+      "create-navbar": {
+        description: TOOL_DESCRIPTIONS.CREATE_NAVBAR,
+        parameters: CreateNavbarSchema,
+      },
+      "get-app-pages": {
+        description: TOOL_DESCRIPTIONS.GET_APP_PAGES,
+        parameters: GetAppPagesSchema,
       },
     },
   },
@@ -195,7 +205,18 @@ server.tool(
   CreateAutomationBaseSchema.shape,
   toolHandlers["create-automation"]
 );
-
+server.tool(
+  "get-app-pages",
+  TOOL_DESCRIPTIONS.GET_APP_PAGES,
+  GetAppPagesSchema.shape,
+  toolHandlers["get-app-pages"]
+);
+server.tool(
+  "create-navbar",
+  TOOL_DESCRIPTIONS.CREATE_NAVBAR,
+  CreateNavbarSchema.shape,
+  toolHandlers["create-navbar"]
+);
 /**
  * Main function to start the MCP server
  */

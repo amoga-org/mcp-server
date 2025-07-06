@@ -281,4 +281,59 @@ export const TOOL_DESCRIPTIONS = {
     "• For object/core triggers: Target object must exist in app contract\n" +
     "• Valid authentication token required\n" +
     "• Provide detailed scriptDescription for optimal AI generation",
+
+  CREATE_NAVBAR:
+    "Creates an intelligent navigation bar (navbar) for an Amoga application based on the app contract. This tool automatically analyzes the app's objects, pages, and roles to generate a comprehensive navigation structure with role-based access controls.\n\n" +
+    "**Key Features:**\n" +
+    "- **Automatic Structure Generation:** Creates organized navigation sections based on object types (workitems, tasks, master data)\n" +
+    "- **Role-Based Access Control:** Maps navigation items to appropriate user roles based on permissions\n" +
+    "- **Smart Categorization:** Groups related functionality into logical sections (Dashboards, Work Items, Data Management, Tasks, Custom Pages)\n" +
+    "- **Icon Integration:** Automatically assigns appropriate icons for different navigation elements\n" +
+    "- **Permission-Aware:** Only shows navigation items that users have permission to access\n\n" +
+    "**Generated Navigation Sections:**\n" +
+    "- **📊 Dashboards:** Analytics and insights pages for different data objects\n" +
+    "- **💼 Work Items:** Main business objects with CRUD operations\n" +
+    "- **📊 Data Management:** Master data and reference objects\n" +
+    "- **✅ Tasks:** Task management and workflow items\n" +
+    "- **📑 Custom Pages:** Additional pages defined in the app contract\n" +
+    "- **⚙️ Settings:** Administrative functions (admin roles only)\n\n" +
+    "**Use Cases:**\n" +
+    "- Setting up navigation for new applications\n" +
+    "- Updating navigation structure after adding new objects or roles\n" +
+    "- Creating role-specific navigation experiences\n" +
+    "- Standardizing navigation across Amoga applications\n\n" +
+    "**Requirements:**\n" +
+    "- Valid app contract with defined objects and roles\n" +
+    "- Proper permissions to create navigation elements\n" +
+    "- User email for mapping the navbar to the creator\n\n" +
+    "The tool will automatically create the navbar via API and optionally map it to users based on their roles.",
+
+  GET_APP_PAGES:
+    "Retrieves all pages available for navigation in Amoga applications. This tool fetches comprehensive page data from the core page API and can optionally filter results by application ID.\n\n" +
+    "**Key Features:**\n" +
+    "- **Complete Page Discovery:** Fetches all pages from the core page API\n" +
+    "- **Application Filtering:** Optional filtering by specific application ID\n" +
+    "- **Status Information:** Returns page status, creation/update timestamps\n" +
+    "- **Permission Context:** Includes page permissions and role assignments\n" +
+    "- **Navigation Ready:** Provides page data formatted for navigation systems\n\n" +
+    "**Returned Page Information:**\n" +
+    "- **Basic Details:** ID, name, display name, slug, description\n" +
+    "- **Status & Timestamps:** Current status, creation and update times\n" +
+    "- **Application Context:** Associated application ID for filtering\n" +
+    "- **Navigation Data:** Icon, route, permissions, and role assignments\n" +
+    "- **Metadata:** Additional page configuration and settings\n\n" +
+    "**Use Cases:**\n" +
+    "- Building application navigation systems\n" +
+    "- Auditing available pages across applications\n" +
+    "- Creating custom page listings and menus\n" +
+    "- Understanding page structure for role-based access\n" +
+    "- Integration with navbar generation tools\n\n" +
+    "**Parameters:**\n" +
+    "- **appId (optional):** When provided, filters pages for specific application\n" +
+    "- **baseUrl & tenantName:** Required for API authentication\n\n" +
+    "**Response:**\n" +
+    "- If appId provided: Returns filtered pages for that specific application\n" +
+    "- If appId omitted: Returns all pages across all applications\n" +
+    "- Includes total count and filtering status for clarity\n\n" +
+    "This tool is particularly useful when building navigation systems or understanding the page structure of Amoga applications.",
 } as const;

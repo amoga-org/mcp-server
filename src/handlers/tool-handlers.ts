@@ -29,6 +29,8 @@ import {
   CheckPublishStatusParams,
   GenerateWorkflowParams,
   CreateAutomationParams,
+  CreateNavbarParams,
+  GetAppPagesParams,
 } from "../types/app.types.js";
 import { createAttributeHandler } from "./attribute-handler.js";
 import { createDummyDataHandler } from "./dummy-data-handler.js";
@@ -39,6 +41,9 @@ import {
 } from "../services/publish-status.service.js";
 import { generateWorkflows } from "../services/workflow.service.js";
 import { createAutomation } from "../services/automation.service.js";
+import { createNavbar } from "../services/navbar.service.js";
+import { getAppPages } from "../services/app-pages.service.js";
+import { CreateNavbarSchema } from "../types/app.types.js";
 
 export const toolHandlers = {
   // Create a new application
@@ -581,6 +586,184 @@ export const toolHandlers = {
           {
             type: "text" as const,
             text: `❌ Error creating automation: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Create navbar
+  "create-navbar": async (params: CreateNavbarParams) => {
+    try {
+      // Step 1: Get app contract to get roles and objects
+      const appContract = await getAppContract({
+        baseUrl: params.baseUrl,
+        appId: params.appId,
+        tenantName: params.tenantName,
+      });
+
+      // Step 2: Get app pages
+      const pagesResult = await getAppPages({
+        baseUrl: params.baseUrl,
+        tenantName: params.tenantName,
+        appId: params.appId,
+      });
+
+      if (!pagesResult.success) {
+        throw new Error(`Failed to get app pages: ${pagesResult.message}`);
+      }
+      // Step 3: Create navbar using the enhanced service
+      const result = await createNavbar({
+        ...params,
+        appContract,
+        appPages: pagesResult.pages,
+      });
+
+      if (result.success) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `✅ **Navbar Created Successfully**\n\n` +
+                `📋 **Navbar Details:**\n` +
+                `  • Name: ${params.navbarName}\n` +
+                `  • Navbar ID: ${result.navbar_id || "Generated"}\n` +
+                `  • User Mapping ID: ${
+                  result.user_mapping_id || "Not mapped"
+                }\n` +
+                `  • Total Groups: ${result.navbar_items.length}\n` +
+                `  • Total Pages: ${result.navbar_items.reduce(
+                  (total, item) =>
+                    total + (item.children ? item.children.length : 0),
+                  0
+                )}\n` +
+                `  • Role Mappings: ${
+                  Object.keys(result.role_mappings).length
+                } roles configured\n\n` +
+                `🎯 **Generated Structure:**\n` +
+                result.navbar_items
+                  .map(
+                    (item) =>
+                      `  📁 **${item.display_name}** (${
+                        item.children ? item.children.length : 0
+                      } items)\n` +
+                      (item.children
+                        ? item.children
+                            .map(
+                              (child) =>
+                                `    └─ ${child.display_name} (${child.route})`
+                            )
+                            .join("\n")
+                        : "")
+                  )
+                  .join("\n\n") +
+                `\n\n📊 **Summary:** ${result.message}`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `❌ **Failed to create navbar:** ${result.message}`,
+            },
+          ],
+        };
+      }
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ **Error creating navbar:** ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Get app pages
+  "get-app-pages": async (params: GetAppPagesParams) => {
+    try {
+      const result = await getAppPages(params);
+      if (result.success) {
+        const pagesText =
+          result.pages.length > 0
+            ? result.pages
+                .map(
+                  (page) =>
+                    `  • **${page.display_name || page.name}** (ID: ${
+                      page.page_id
+                    })\n` +
+                    `    - Type: ${page.type}\n` +
+                    `    - App ID: ${page.application_id}\n` +
+                    `    - Workitem: ${page.workitem_name || "N/A"} (${
+                      page.workitem_slug || "N/A"
+                    })\n` +
+                    `    - Mode: ${page.mode}\n` +
+                    `    - Default: ${page.is_default ? "Yes" : "No"}\n` +
+                    `    - Created: ${new Date(
+                      page.created_at
+                    ).toLocaleDateString()}`
+                )
+                .join("\n\n")
+            : "  No pages found.";
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `✅ **Pages Retrieved Successfully**
+
+📊 **Summary:**
+- **Total Pages Found:** ${result.total}
+- **Filtered:** ${result.filtered ? "Yes" : "No"}
+${
+  params.appId
+    ? `- **App ID Filter:** ${params.appId}`
+    : "- **Scope:** All applications"
+}
+
+📄 **Pages:**
+${pagesText}
+
+🎯 ${result.message}`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `❌ **Failed to retrieve pages**
+
+**Error:** ${result.message}
+
+**Debug Info:**
+- **Base URL:** ${params.baseUrl}
+- **Tenant Name:** ${params.tenantName}
+- **App ID:** ${params.appId || "Not specified"}
+- **API Key Set:** ${process.env.MCP_API_KEY ? "Yes" : "No"}
+
+**Troubleshooting:**
+- Verify that the base URL is correct and accessible
+- Check that the tenant name exists
+- Ensure the API key (MCP_API_KEY) is valid
+- Confirm the API endpoint is available
+- Check tenant permissions for page access`,
+            },
+          ],
+        };
+      }
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ Error retrieving pages: ${err.message || err}`,
           },
         ],
       };

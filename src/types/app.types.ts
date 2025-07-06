@@ -712,3 +712,101 @@ export interface CreateAutomationParams {
   scriptDescription: string; // Comprehensive description including what to do, which utils to use, business logic, error handling, and integration patterns
   customScript?: string;
 }
+
+// Navbar Creation Types
+export const CreateNavbarSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  appId: z.string().describe("The application ID to create navbar for"),
+  tenantName: z.string().describe("The tenant name"),
+  email: z
+    .string()
+    .email()
+    .describe("Email address of the user creating the navbar"),
+  navbarName: z.string().describe("Display name for the navbar"),
+  includeRoleMapping: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe(
+      "Whether to automatically map pages to roles based on permissions"
+    ),
+});
+
+export interface CreateNavbarParams {
+  baseUrl: string;
+  appId: string;
+  tenantName: string;
+  email: string;
+  navbarName: string;
+  includeRoleMapping?: boolean;
+  appContract?: any; // Optional for when called from handler
+  appPages?: AppPage[]; // Optional for when called from handler
+}
+
+export interface NavbarItem {
+  id: string;
+  display_name: string;
+  icon?: object | string; // Can be an object with icon details or a string for simple icons
+  route?: string;
+  type: "page" | "folder" | "divider";
+  children?: NavbarItem[];
+  roles?: string[];
+}
+
+export interface NavbarResponse {
+  success: boolean;
+  navbar_id?: string;
+  user_mapping_id?: string;
+  navbar_items: NavbarItem[];
+  role_mappings: Record<string, string[]>;
+  message: string;
+}
+
+// Schema for get-app-pages tool
+export const GetAppPagesSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  tenantName: z.string().describe("The tenant name"),
+  appId: z
+    .string()
+    .optional()
+    .describe(
+      "Optional application ID to filter pages. If not provided, returns all pages"
+    ),
+});
+
+export interface GetAppPagesParams {
+  baseUrl: string;
+  tenantName: string;
+  appId?: string;
+}
+
+export interface AppPage {
+  id: number;
+  tenant_id: number;
+  user_id: number;
+  application_id: string;
+  page_id: string;
+  custom_field1?: string | null;
+  custom_field2?: string | null;
+  created_at: string;
+  updated_at: string;
+  name: string;
+  display_name: string;
+  type: string;
+  is_default: boolean;
+  mode: string;
+  workitem_type?: string;
+  workitem?: number;
+  workitem_name?: string;
+  workitem_slug?: string;
+  application_name: string;
+  app_id: string;
+}
+
+export interface GetAppPagesResponse {
+  success: boolean;
+  pages: AppPage[];
+  total: number;
+  filtered: boolean;
+  message: string;
+}
