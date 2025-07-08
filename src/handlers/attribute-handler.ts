@@ -233,6 +233,7 @@ const RESERVED_ATTRIBUTES = new Set([
   "assignee",
   "due_date", // Alternative format
   "dueDate", // Alternative format
+  "task_type",
 ]);
 
 const validateAttributes = (
