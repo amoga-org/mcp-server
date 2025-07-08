@@ -283,30 +283,40 @@ export const TOOL_DESCRIPTIONS = {
     "• Provide detailed scriptDescription for optimal AI generation",
 
   CREATE_NAVBAR:
-    "Creates an intelligent navigation bar (navbar) for an Amoga application based on the app contract. This tool automatically analyzes the app's objects, pages, and roles to generate a comprehensive navigation structure with role-based access controls.\n\n" +
+    "Creates role-based, SOW-compliant navigation bars (navbars) for an Amoga application. This tool automatically creates separate navbars for each role (excluding administrator) based on the app contract permissions and page assignments.\n\n" +
     "**Key Features:**\n" +
-    "- **Automatic Structure Generation:** Creates organized navigation sections based on object types (workitems, tasks, master data)\n" +
-    "- **Role-Based Access Control:** Maps navigation items to appropriate user roles based on permissions\n" +
-    "- **Smart Categorization:** Groups related functionality into logical sections (Dashboards, Work Items, Data Management, Tasks, Custom Pages)\n" +
-    "- **Icon Integration:** Automatically assigns appropriate icons for different navigation elements\n" +
-    "- **Permission-Aware:** Only shows navigation items that users have permission to access\n\n" +
-    "**Generated Navigation Sections:**\n" +
-    "- **📊 Dashboards:** Analytics and insights pages for different data objects\n" +
-    "- **💼 Work Items:** Main business objects with CRUD operations\n" +
-    "- **📊 Data Management:** Master data and reference objects\n" +
-    "- **✅ Tasks:** Task management and workflow items\n" +
-    "- **📑 Custom Pages:** Additional pages defined in the app contract\n" +
-    "- **⚙️ Settings:** Administrative functions (admin roles only)\n\n" +
-    "**Use Cases:**\n" +
-    "- Setting up navigation for new applications\n" +
-    "- Updating navigation structure after adding new objects or roles\n" +
-    "- Creating role-specific navigation experiences\n" +
-    "- Standardizing navigation across Amoga applications\n\n" +
+    "- **Role-Based Creation:** Creates one navbar per role found in app contract (administrator role excluded)\n" +
+    "- **Permission-Based Page Access:** Each role only sees pages they have read permissions for\n" +
+    "- **Multiple Navbar Names:** Accepts array of navbar names for each role\n" +
+    "- **Automatic Tool Execution:** Runs get-app-contract and get-app-pages internally\n" +
+    "- **Strict Route Usage:** All routes use page_id for navigation\n\n" +
+    "**SOW Navigation Structure (Strict Order):**\n" +
+    "1. **📊 Dashboard** - Analytics and insights pages (Rank 1)\n" +
+    "2. **✅ Tasks** - Task management and workflow items (Rank 2)\n" +
+    "3. **💼 Case Objects** - workitem-type objects only, parent/top-level only (Rank 3+)\n" +
+    "4. **📦 Object/Ad-Hoc Objects** - object/segment-type objects, parent/top-level only (Rank 4+)\n" +
+    "5. **⚙️ Admin** - Master/Meta objects, only visible to admin roles (Final rank)\n\n" +
+    "**Role-Based Page Filtering:**\n" +
+    "- Pages are filtered based on object_slug permissions in loco_permission\n" +
+    "- Only pages where role has read: true permission are included\n" +
+    "- Dashboard and general pages are accessible to all roles\n" +
+    "- Administrator role is completely excluded from navbar creation\n\n" +
+    "**Generated Sub-Menu Items per Object:**\n" +
+    "- **My [ObjectName]** - Items assigned to current user\n" +
+    "- **All [ObjectName]** - All items of this type\n" +
+    "- **Overdue [ObjectName]** - Past due items (for workitem/task types only)\n\n" +
+    "**Input Parameters:**\n" +
+    "- **navbarName:** Array of strings (one per role, excluding administrator)\n" +
+    "- **baseUrl, appId, tenantName, email:** Required for API access\n" +
+    "- Tool automatically fetches app contract and pages\n\n" +
+    "**Example Usage:**\n" +
+    "If app has roles: ['manager', 'user', 'administrator'], provide navbarName: ['Manager Dashboard', 'User Portal']\n" +
+    "Tool creates 2 navbars (administrator excluded) with role-specific page access\n\n" +
     "**Requirements:**\n" +
-    "- Valid app contract with defined objects and roles\n" +
-    "- Proper permissions to create navigation elements\n" +
-    "- User email for mapping the navbar to the creator\n\n" +
-    "The tool will automatically create the navbar via API and optionally map it to users based on their roles.",
+    "- Valid app contract with role permissions (loco_permission structure)\n" +
+    "- Pages must have object_slug for permission-based filtering\n" +
+    "- Routes strictly use page_id format: /{page_id}\n\n" +
+    "The tool ensures each role only sees navigation items they have permission to access, following strict SOW grouping and ordering requirements.",
 
   GET_APP_PAGES:
     "Retrieves all pages available for navigation in Amoga applications. This tool fetches comprehensive page data from the core page API and can optionally filter results by application ID.\n\n" +
@@ -336,4 +346,99 @@ export const TOOL_DESCRIPTIONS = {
     "- If appId omitted: Returns all pages across all applications\n" +
     "- Includes total count and filtering status for clarity\n\n" +
     "This tool is particularly useful when building navigation systems or understanding the page structure of Amoga applications.",
+
+  CREATE_JOB_TITLE:
+    "Creates job titles for all roles in an application (excluding administrator) and automatically links them to their corresponding navbars and roles. This tool integrates with the navbar creation system to provide complete user management setup.\n\n" +
+    "**Key Features:**\n" +
+    "- **Role-Based Creation:** Creates one job title per role (excluding administrator)\n" +
+    "- **Automatic Integration:** Links job titles to corresponding navbars and roles\n" +
+    "- **User Management Data:** Fetches application roles, navbars, and relationships\n" +
+    "- **Customizable Names:** Accepts array of job title names or generates them automatically\n" +
+    "- **Department Assignment:** Assigns job titles to specified departments\n" +
+    "- **Active Status:** All created job titles are automatically set to active\n\n" +
+    "**Process Flow:**\n" +
+    "1. **Data Retrieval:** Calls user management API to get roles, navbars, and app data\n" +
+    "2. **Role Filtering:** Excludes administrator role from job title creation\n" +
+    "3. **Name Assignment:** Uses provided names or generates contextual job title names\n" +
+    "4. **Navbar Mapping:** Automatically links each job title to its corresponding navbar\n" +
+    "5. **Job Title Creation:** Creates job titles via the object flow API\n\n" +
+    "**Generated Job Title Structure:**\n" +
+    "- **Name:** Role-based or custom job title name\n" +
+    "- **Active Status:** Always true\n" +
+    "- **Department:** Specified department (default: Engineering)\n" +
+    "- **Assigned To:** Application or entity name\n" +
+    "- **App Mapping:** Linked to specific application ID\n" +
+    "- **Role Mapping:** Connected to corresponding role ID\n" +
+    "- **Navbar Integration:** Mapped to role-specific navbar\n\n" +
+    "**Use Cases:**\n" +
+    "- Complete user management setup after navbar creation\n" +
+    "- Organizational structure definition\n" +
+    "- Role-based job title assignment\n" +
+    "- Department-wise user categorization\n" +
+    "- Integration with HR and user management systems\n\n" +
+    "**Prerequisites:**\n" +
+    "- Application must exist with defined roles\n" +
+    "- Navbars should be created first (recommended workflow)\n" +
+    "- Valid authentication token required\n" +
+    "- User management API access permissions\n\n" +
+    "**Integration Workflow:**\n" +
+    "1. CREATE_NAVBAR - Creates role-based navigation bars\n" +
+    "2. CREATE_JOB_TITLE - Creates job titles linked to navbars and roles\n" +
+    "3. Complete user management system is ready\n\n" +
+    "This tool completes the user management setup by creating organizational job titles that are properly integrated with the application's role and navigation system.",
+
+  CREATE_USER:
+    "Creates users for all roles in an application (excluding administrator) and automatically maps them to corresponding job titles, departments, and navbars. This is the final step in the complete user management workflow.\n\n" +
+    "**Key Features:**\n" +
+    "- **Role-Based User Creation:** Creates one user per role (excluding administrator)\n" +
+    "- **Automatic Job Title Mapping:** Links users to previously created job titles\n" +
+    "- **Department Assignment:** Assigns users to specified departments\n" +
+    "- **Email Generation:** Creates emails as {app_slug}.{rolename}@amoga.app\n" +
+    "- **Master Data Integration:** Fetches and uses job titles, departments, and assignments\n" +
+    "- **Status Management:** Sets all users to 'todo' status for further configuration\n\n" +
+    "**Process Flow:**\n" +
+    "1. **Authentication:** Obtains CRM token for API access\n" +
+    "2. **Data Retrieval:** Fetches user management data (roles, navbars, applications)\n" +
+    "3. **Master Data Access:** Gets job titles, departments, and assignment data\n" +
+    "4. **Role Processing:** Filters out administrator role, processes remaining roles\n" +
+    "5. **User Generation:** Creates user accounts with proper mappings\n" +
+    "6. **API Integration:** Posts user data via object flow API\n\n" +
+    "**Generated User Structure:**\n" +
+    "- **Name:** Role-based or custom user name\n" +
+    "- **Email:** Auto-generated as {app_slug}.{rolename}@amoga.app\n" +
+    "- **Status:** 'todo' (ready for assignment)\n" +
+    "- **Job Title:** Mapped from created job titles in master data\n" +
+    "- **Department:** Specified department (default: Engineering)\n" +
+    "- **Password:** Set to email address (changeable)\n" +
+    "- **App Assignment:** Linked to current application\n" +
+    "- **Role Mapping:** Connected to corresponding role and navbar\n" +
+    "- **Phone Number:** Optional, can be provided or left empty\n\n" +
+    "**Input Parameters:**\n" +
+    "- **userNames (optional):** Array of custom user names (uses role-based names if not provided)\n" +
+    "- **passwords (optional):** Array of custom passwords (uses email as default)\n" +
+    "- **phoneNumbers (optional):** Array of phone numbers for users\n" +
+    "- **department (optional):** Department name (default: Engineering)\n\n" +
+    "**Use Cases:**\n" +
+    "- Complete user management system implementation\n" +
+    "- Automated user provisioning for new applications\n" +
+    "- Role-based user account creation\n" +
+    "- Integration with HR and identity management systems\n" +
+    "- Multi-tenant application user setup\n\n" +
+    "**Prerequisites:**\n" +
+    "- Application must exist with defined roles\n" +
+    "- Job titles should be created first (via CREATE_JOB_TITLE)\n" +
+    "- Navbars should be created (via CREATE_NAVBAR)\n" +
+    "- Valid authentication and API access permissions\n" +
+    "- Master data APIs must be accessible\n\n" +
+    "**Complete Workflow Integration:**\n" +
+    "1. CREATE_NAVBAR - Creates role-based navigation bars\n" +
+    "2. CREATE_JOB_TITLE - Creates job titles linked to navbars and roles\n" +
+    "3. CREATE_USER - Creates users mapped to job titles and departments\n" +
+    "4. Complete user management ecosystem is established\n\n" +
+    "**Output:**\n" +
+    "- Success confirmation with created user details\n" +
+    "- User mapping information (role, job title, department)\n" +
+    "- Generated email addresses and access credentials\n" +
+    "- Integration status with application roles and navbars\n\n" +
+    "This tool completes the end-to-end user management setup by creating actual user accounts that are fully integrated with the application's organizational structure, roles, and navigation system.",
 } as const;

@@ -39,16 +39,56 @@ const generateNavbarName = (roleName: string, appName?: string): string => {
 };
 
 /**
- * Create default navbar template structure
+ * Filter pages based on role permissions
+ * @param pages - All available pages
+ * @param rolePermissions - Role's permissions object
+ * @returns Filtered pages that the role has access to
+ */
+const filterPagesByRolePermissions = (
+  pages: any[],
+  rolePermissions: any
+): any[] => {
+  if (!rolePermissions || !rolePermissions.loco_permission) {
+    return pages; // Return all pages if no permissions defined
+  }
+
+  return pages.filter((page: any) => {
+    // If page has an object_slug, check if role has permission for that object
+    if (page.object_slug) {
+      const objPermissions = rolePermissions.loco_permission[page.object_slug];
+      return objPermissions && objPermissions.read === true;
+    }
+
+    // For general pages (dashboard, etc.), allow access
+    return true;
+  });
+};
+
+/**
+ * Create SOW-compliant navbar template structure with role-based page filtering
+ * SOW Grouping Order: Dashboard → Tasks → Case-type objects → Object/Ad-Hoc-type objects → Admin (Master/Meta objects)
  * @param pages - Available pages
+ * @param objects - App contract objects
  * @param appId - Application ID
+ * @param rolePermissions - Role permissions for filtering
+ * @param isAdminRole - Whether this role has admin privileges
  * @returns Sidebar props structure
  */
-const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
+const createSOWNavbarTemplate = (
+  pages: any[],
+  objects: any[],
+  appId: string,
+  rolePermissions: any,
+  isAdminRole: boolean = false
+) => {
+  // Filter pages based on role permissions
+  const accessiblePages = filterPagesByRolePermissions(pages, rolePermissions);
+
   // Filter out record pages - only include dashboard, list, and custom pages
-  const filteredPages = pages.filter(
+  const filteredPages = accessiblePages.filter(
     (page: any) =>
       page.type !== "record" &&
+      page.type !== "create" &&
       (page.type === "dashboard" ||
         page.type === "list" ||
         page.type === "custom" ||
@@ -56,8 +96,9 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
   );
 
   const sidebarProps = [];
+  let currentRank = 1;
 
-  // Dashboard Group
+  // 1. DASHBOARD GROUP (Rank 1)
   const dashboardPages = filteredPages.filter(
     (page: any) =>
       page.type === "dashboard" ||
@@ -79,7 +120,7 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
       rank: index + 1,
       type: "Pages",
       uuid: uuidv4(),
-      route: `/${page.page_id}`,
+      route: `/${page.page_id}`, // Always use page_id
       app_id: appId,
       children: [],
       is_active: true,
@@ -101,7 +142,7 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
         imgurl: "https://static.amoga.io/fa/solid/tachometer-alt.svg",
         version: 1,
       },
-      rank: 1,
+      rank: currentRank++,
       type: "",
       uuid: uuidv4(),
       route: "",
@@ -117,7 +158,11 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
     });
   }
 
-  // Tasks Group with predefined structure
+  // 2. TASKS GROUP (Rank 2) - Only include if task objects exist and role has permission
+  const taskObjects = objects.filter(
+    (obj: any) =>
+      obj.type === "task" && hasObjectPermission(rolePermissions, obj.slug)
+  );
   const taskPages = filteredPages.filter(
     (page: any) =>
       page.type === "list" ||
@@ -126,8 +171,7 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
       page.workitem_type === "task"
   );
 
-  if (taskPages.length > 0) {
-    // Create the standard task items
+  if (taskObjects.length > 0 || taskPages.length > 0) {
     const taskItems = [
       {
         icon: {
@@ -142,7 +186,7 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
         rank: 1,
         type: "Pages",
         uuid: uuidv4(),
-        route: taskPages[0] ? `/${taskPages[0].page_id}` : "/my-tasks",
+        route: taskPages[0] ? `/${taskPages[0].page_id}` : "/my-tasks", // Always use page_id
         app_id: appId,
         children: [],
         is_active: true,
@@ -170,7 +214,7 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
           ? `/${taskPages[1].page_id}`
           : taskPages[0]
           ? `/${taskPages[0].page_id}`
-          : "/all-tasks",
+          : "/all-tasks", // Always use page_id
         app_id: appId,
         children: [],
         is_active: true,
@@ -198,7 +242,7 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
           ? `/${taskPages[2].page_id}`
           : taskPages[0]
           ? `/${taskPages[0].page_id}`
-          : "/overdue-tasks",
+          : "/overdue-tasks", // Always use page_id
         app_id: appId,
         children: [],
         is_active: true,
@@ -221,7 +265,7 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
         imgurl: "https://static.amoga.io/fa/solid/tasks.svg",
         version: 1,
       },
-      rank: 2,
+      rank: currentRank++,
       type: "",
       uuid: uuidv4(),
       route: "",
@@ -237,7 +281,291 @@ const createDefaultNavbarTemplate = (pages: any[], appId: string) => {
     });
   }
 
+  // 3. CASE-TYPE OBJECTS (workitem) (Rank 3) - Only parent/top-level objects with permission
+  const caseObjects = objects.filter(
+    (obj: any) =>
+      obj.type === "workitem" &&
+      !obj.parent &&
+      hasObjectPermission(rolePermissions, obj.slug)
+  );
+
+  if (caseObjects.length > 0) {
+    caseObjects.forEach((caseObj: any) => {
+      const casePages = filteredPages.filter(
+        (page: any) => page.object_slug === caseObj.slug
+      );
+
+      const caseItems = generateObjectMenuItems(
+        caseObj,
+        casePages,
+        appId,
+        "workitem"
+      );
+
+      sidebarProps.push({
+        icon: {
+          svg: "briefcase",
+          name: "work",
+          type: "material-icons",
+          color: "#9c27b0",
+          style: "solid",
+          imgurl: "https://static.amoga.io/fa/solid/briefcase.svg",
+          version: 1,
+        },
+        rank: currentRank++,
+        type: "",
+        uuid: uuidv4(),
+        route: "",
+        app_id: appId,
+        children: caseItems,
+        is_active: true,
+        is_custom: true,
+        meta_data: { object_slug: caseObj.slug, object_type: "workitem" },
+        view_type: "group",
+        is_default: false,
+        display_name: caseObj.display_name || caseObj.name,
+        default_homepage_type: "",
+      });
+    });
+  }
+
+  // 4. OBJECT/AD-HOC-TYPE OBJECTS (object, segment, etc.) (Rank 4+) - Only parent/top-level objects with permission
+  const adhocObjects = objects.filter(
+    (obj: any) =>
+      (obj.type === "object" || obj.type === "segment") &&
+      !obj.parent &&
+      obj.type !== "master" && // Exclude master objects for admin section
+      hasObjectPermission(rolePermissions, obj.slug)
+  );
+
+  if (adhocObjects.length > 0) {
+    adhocObjects.forEach((adhocObj: any) => {
+      const objectPages = filteredPages.filter(
+        (page: any) => page.object_slug === adhocObj.slug
+      );
+
+      const objectItems = generateObjectMenuItems(
+        adhocObj,
+        objectPages,
+        appId,
+        "object"
+      );
+
+      sidebarProps.push({
+        icon: {
+          svg: "cube",
+          name: "category",
+          type: "material-icons",
+          color: "#607d8b",
+          style: "solid",
+          imgurl: "https://static.amoga.io/fa/solid/cube.svg",
+          version: 1,
+        },
+        rank: currentRank++,
+        type: "",
+        uuid: uuidv4(),
+        route: "",
+        app_id: appId,
+        children: objectItems,
+        is_active: true,
+        is_custom: true,
+        meta_data: { object_slug: adhocObj.slug, object_type: adhocObj.type },
+        view_type: "group",
+        is_default: false,
+        display_name: adhocObj.display_name || adhocObj.name,
+        default_homepage_type: "",
+      });
+    });
+  }
+
+  // 5. ADMIN SECTION (Master/Meta objects) (Last rank) - Only for admin roles with permission
+  if (isAdminRole) {
+    const masterObjects = objects.filter(
+      (obj: any) =>
+        obj.type === "master" &&
+        !obj.parent &&
+        hasObjectPermission(rolePermissions, obj.slug)
+    );
+
+    if (masterObjects.length > 0) {
+      const adminItems: any[] = [];
+
+      masterObjects.forEach((masterObj: any, index: number) => {
+        const masterPages = filteredPages.filter(
+          (page: any) => page.object_slug === masterObj.slug
+        );
+
+        const masterItems = generateObjectMenuItems(
+          masterObj,
+          masterPages,
+          appId,
+          "master"
+        );
+
+        // Add master object items to admin section
+        adminItems.push(
+          ...masterItems.map((item: any, itemIndex: number) => ({
+            ...item,
+            rank: index * 10 + itemIndex + 1,
+            display_name: `${masterObj.display_name || masterObj.name} - ${
+              item.display_name
+            }`,
+          }))
+        );
+      });
+
+      if (adminItems.length > 0) {
+        sidebarProps.push({
+          icon: {
+            svg: "cog",
+            name: "admin_panel_settings",
+            type: "material-icons",
+            color: "#795548",
+            style: "solid",
+            imgurl: "https://static.amoga.io/fa/solid/cog.svg",
+            version: 1,
+          },
+          rank: currentRank++,
+          type: "",
+          uuid: uuidv4(),
+          route: "",
+          app_id: appId,
+          children: adminItems,
+          is_active: true,
+          is_custom: true,
+          meta_data: { section_type: "admin" },
+          view_type: "group",
+          is_default: false,
+          display_name: "Admin",
+          default_homepage_type: "",
+        });
+      }
+    }
+  }
+
   return sidebarProps;
+};
+
+/**
+ * Generate standard menu items for an object (My [Object], All [Object], Overdue, etc.)
+ */
+const generateObjectMenuItems = (
+  obj: any,
+  pages: any[],
+  appId: string,
+  objectType: string
+) => {
+  const baseRoute = pages.length > 0 ? `/${pages[0].page_id}` : `/${obj.slug}`;
+  const objectName = obj.display_name || obj.name;
+
+  const items = [
+    {
+      icon: {
+        svg: "user",
+        name: "person",
+        type: "material-icons",
+        color: "#4caf50",
+        style: "solid",
+        imgurl: "https://static.amoga.io/fa/solid/user.svg",
+        version: 1,
+      },
+      rank: 1,
+      type: "Pages",
+      uuid: uuidv4(),
+      route: baseRoute, // Always use page_id
+      app_id: appId,
+      children: [],
+      is_active: true,
+      is_custom: true,
+      meta_data: { filter_type: "my", object_slug: obj.slug },
+      view_type: "item",
+      is_default: false,
+      display_name: `My ${objectName}`,
+      default_homepage_type: "",
+    },
+    {
+      icon: {
+        svg: "list",
+        name: "list",
+        type: "material-icons",
+        color: "#2196f3",
+        style: "solid",
+        imgurl: "https://static.amoga.io/fa/solid/list.svg",
+        version: 1,
+      },
+      rank: 2,
+      type: "Pages",
+      uuid: uuidv4(),
+      route: pages[1] ? `/${pages[1].page_id}` : baseRoute, // Always use page_id
+      app_id: appId,
+      children: [],
+      is_active: true,
+      is_custom: true,
+      meta_data: { filter_type: "all", object_slug: obj.slug },
+      view_type: "item",
+      is_default: false,
+      display_name: `All ${objectName}`,
+      default_homepage_type: "",
+    },
+  ];
+
+  // Add Overdue option for workitem and task types
+  if (objectType === "workitem" || objectType === "task") {
+    items.push({
+      icon: {
+        svg: "exclamation-triangle",
+        name: "warning",
+        type: "material-icons",
+        color: "#ff5722",
+        style: "solid",
+        imgurl: "https://static.amoga.io/fa/solid/exclamation-triangle.svg",
+        version: 1,
+      },
+      rank: 3,
+      type: "Pages",
+      uuid: uuidv4(),
+      route: pages[2] ? `/${pages[2].page_id}` : baseRoute, // Always use page_id
+      app_id: appId,
+      children: [],
+      is_active: true,
+      is_custom: true,
+      meta_data: { filter_type: "overdue", object_slug: obj.slug },
+      view_type: "item",
+      is_default: false,
+      display_name: `Overdue ${objectName}`,
+      default_homepage_type: "",
+    });
+  }
+
+  return items;
+};
+
+/**
+ * Check if role has permission to access an object
+ */
+const hasObjectPermission = (
+  rolePermissions: any,
+  objectSlug: string
+): boolean => {
+  if (!rolePermissions || !rolePermissions.loco_permission) {
+    return true; // Default to allow if no permissions defined
+  }
+
+  const objPermissions = rolePermissions.loco_permission[objectSlug];
+  if (!objPermissions) {
+    return false;
+  }
+
+  // Check if user has at least read permission
+  return objPermissions.read === true;
+};
+
+/**
+ * Determine if a role is an admin role
+ */
+const isAdminRole = (roleName: string): boolean => {
+  const adminRoleNames = ["admin", "administrator"];
+  return adminRoleNames.includes(roleName.toLowerCase());
 };
 
 /**
@@ -265,8 +593,16 @@ export const createNavbar = async (
 
     const existingPermissions = appContract?.permission || {};
     const rolesData = existingPermissions;
-    const rolesArray = Object.values(rolesData);
-    const appName = appContract?.contract_json?.app_name || "App";
+    const appName = appContract?.contract_json?.application_name;
+    const appObjects = appContract?.contract_json?.objects || [];
+
+    // Filter out administrator role
+    const filteredRolesData = Object.fromEntries(
+      Object.entries(rolesData).filter(
+        ([roleName]) =>
+          !isAdminRole(roleName) || roleName.toLowerCase() !== "administrator"
+      )
+    );
 
     // Filter out record pages - only include actual navigable pages
     const filteredPages = pages.filter(
@@ -277,19 +613,30 @@ export const createNavbar = async (
     let lastNavbarId = null;
     let lastUserMappingId = null;
 
-    // Create a navbar for each role
-    for (const [roleName, roleData] of Object.entries(rolesData)) {
+    // Create a navbar for each role (excluding administrator)
+    let navbarNameIndex = 0;
+    for (const [roleName, roleData] of Object.entries(filteredRolesData)) {
       try {
-        const navbarName =
-          params.navbarName || generateNavbarName(roleName, appName);
+        // Use provided navbar name array or generate one
+        const navbarName = appName + " " + roleName;
+        // params.navbarName && params.navbarName[navbarNameIndex]
+        //   ? params.navbarName[navbarNameIndex]
+        //   : generateNavbarName(roleName, appName);
 
-        // Create the default template structure
-        const sidebarProps = createDefaultNavbarTemplate(
+        // Determine if this is an admin role (but not administrator specifically)
+        const roleIsAdmin =
+          isAdminRole(roleName) && roleName.toLowerCase() !== "administrator";
+
+        // Create the SOW-compliant template structure with role-based filtering
+        const sidebarProps = createSOWNavbarTemplate(
           filteredPages,
-          params.appId
+          appObjects,
+          params.appId,
+          roleData,
+          roleIsAdmin
         );
 
-        // Always add Settings at the end
+        // Always add Settings at the end (but not for regular users without permissions)
         sidebarProps.push({
           icon: {
             svg: "gear",
@@ -310,10 +657,12 @@ export const createNavbar = async (
           is_custom: true,
           meta_data: {},
           view_type: "item",
+          //   is_mobile: true,
           is_default: false,
           display_name: "Settings",
           default_homepage_type: "",
         });
+
         // Create navbar using the API
         const navbarResponse = await fetch(
           `${params.baseUrl}/api/v2/core/navigation/list`,
@@ -333,7 +682,10 @@ export const createNavbar = async (
 
         if (!navbarResponse.ok) {
           const errorText = await navbarResponse.text();
-
+          console.warn(
+            `Failed to create navbar for role ${roleName}:`,
+            errorText
+          );
           continue;
         }
 
@@ -362,7 +714,12 @@ export const createNavbar = async (
               userMappingId = mappingResult.id;
               lastUserMappingId = userMappingId;
             }
-          } catch (mappingError) {}
+          } catch (mappingError) {
+            console.warn(
+              `Failed to map navbar to user for role ${roleName}:`,
+              mappingError
+            );
+          }
         }
 
         createdNavbars.push({
@@ -372,17 +729,23 @@ export const createNavbar = async (
           userMappingId: userMappingId,
           sectionsCount: sidebarProps.length,
         });
+
+        navbarNameIndex++;
       } catch (roleError) {
+        console.warn(`Error creating navbar for role ${roleName}:`, roleError);
         continue;
       }
     }
 
     // Convert the last created navbar structure to NavbarItem format for response
-    const templateStructure = createDefaultNavbarTemplate(
+    const templateStructure = createSOWNavbarTemplate(
       filteredPages,
-      params.appId
+      appObjects,
+      params.appId,
+      Object.values(filteredRolesData)[0] || {},
+      false // Don't use admin for template structure generation
     );
-    const navbarItems: NavbarItem[] = templateStructure.map((item) => ({
+    const navbarItems: NavbarItem[] = templateStructure.map((item: any) => ({
       id: item.uuid,
       display_name: item.display_name,
       icon:
@@ -398,9 +761,9 @@ export const createNavbar = async (
             : child.icon,
         route: child.route,
         type: "page" as const,
-        roles: Object.keys(existingPermissions),
+        roles: Object.keys(filteredRolesData),
       })),
-      roles: Object.keys(existingPermissions),
+      roles: Object.keys(filteredRolesData),
     }));
 
     // Add settings item
@@ -410,26 +773,47 @@ export const createNavbar = async (
       icon: "settings",
       route: "/(tabs)/settings",
       type: "page",
-      roles: Object.keys(existingPermissions),
+      roles: Object.keys(filteredRolesData),
     });
 
     const navbarNames = createdNavbars.map((nb) => nb.navbarName).join(", ");
+    const objectTypeCounts = {
+      dashboard: filteredPages.filter((p) => p.type === "dashboard").length,
+      workitem: appObjects.filter(
+        (obj: any) => obj.type === "workitem" && !obj.parent
+      ).length,
+      task: appObjects.filter((obj: any) => obj.type === "task").length,
+      object: appObjects.filter(
+        (obj: any) => obj.type === "object" && !obj.parent
+      ).length,
+      master: appObjects.filter(
+        (obj: any) => obj.type === "master" && !obj.parent
+      ).length,
+    };
+
+    const rolesList = Object.keys(filteredRolesData).join(", ");
     const successMessage = `Successfully created ${
       createdNavbars.length
-    } navbars for roles: ${Object.keys(rolesData).join(
-      ", "
-    )}.\n\nNavbar Names:\n${createdNavbars
+    } SOW-compliant navbars for roles: ${rolesList} (Administrator role excluded).\n\nNavbar Names:\n${createdNavbars
       .map((nb) => `• ${nb.navbarName} (${nb.role})`)
-      .join("\n")}\n\nTemplate includes Dashboard and Tasks groups with ${
-      filteredPages.length
-    } pages mapped to appropriate sections.`;
+      .join("\n")}\n\nSOW Structure Applied:\n• Dashboard: ${
+      objectTypeCounts.dashboard
+    } pages\n• Tasks: ${
+      objectTypeCounts.task
+    } objects\n• Case Objects (workitem): ${
+      objectTypeCounts.workitem
+    } objects\n• Ad-Hoc Objects: ${
+      objectTypeCounts.object
+    } objects\n• Admin/Master Objects: ${
+      objectTypeCounts.master
+    } objects\n\nRole-based permissions applied - users only see pages they have access to.\nAll routes use page_id for navigation.\nAdministrator role excluded from navbar creation.`;
 
     return {
       success: true,
       navbar_id: lastNavbarId,
       user_mapping_id: lastUserMappingId || undefined,
       navbar_items: navbarItems,
-      role_mappings: Object.keys(existingPermissions).reduce((acc, role) => {
+      role_mappings: Object.keys(filteredRolesData).reduce((acc, role) => {
         acc[role] = navbarItems.map((item) => item.id);
         return acc;
       }, {} as Record<string, string[]>),

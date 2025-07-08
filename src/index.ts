@@ -31,6 +31,8 @@ import {
   CreateAutomationBaseSchema,
   CreateNavbarSchema,
   GetAppPagesSchema,
+  CreateJobTitleSchema,
+  CreateUserSchema,
 } from "./types/app.types.js";
 import { DummyDataSchema } from "./schemas/dummy-data-schema.js";
 
@@ -115,6 +117,14 @@ const server = new McpServer({
       "get-app-pages": {
         description: TOOL_DESCRIPTIONS.GET_APP_PAGES,
         parameters: GetAppPagesSchema,
+      },
+      "create-job-title": {
+        description: TOOL_DESCRIPTIONS.CREATE_JOB_TITLE,
+        parameters: CreateJobTitleSchema,
+      },
+      "create-user": {
+        description: TOOL_DESCRIPTIONS.CREATE_USER,
+        parameters: CreateUserSchema,
       },
     },
   },
@@ -216,6 +226,18 @@ server.tool(
   TOOL_DESCRIPTIONS.CREATE_NAVBAR,
   CreateNavbarSchema.shape,
   toolHandlers["create-navbar"]
+);
+server.tool(
+  "create-job-title",
+  TOOL_DESCRIPTIONS.CREATE_JOB_TITLE,
+  CreateJobTitleSchema.shape,
+  toolHandlers["create-job-title"]
+);
+server.tool(
+  "create-user",
+  TOOL_DESCRIPTIONS.CREATE_USER,
+  CreateUserSchema.shape,
+  toolHandlers["create-user"]
 );
 /**
  * Main function to start the MCP server

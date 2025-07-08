@@ -31,6 +31,8 @@ import {
   CreateAutomationParams,
   CreateNavbarParams,
   GetAppPagesParams,
+  CreateJobTitleParams,
+  CreateUserParams,
 } from "../types/app.types.js";
 import { createAttributeHandler } from "./attribute-handler.js";
 import { createDummyDataHandler } from "./dummy-data-handler.js";
@@ -43,6 +45,8 @@ import { generateWorkflows } from "../services/workflow.service.js";
 import { createAutomation } from "../services/automation.service.js";
 import { createNavbar } from "../services/navbar.service.js";
 import { getAppPages } from "../services/app-pages.service.js";
+import { createJobTitle } from "../services/job-title.service.js";
+import { createUser } from "../services/create-user.service.js";
 import { CreateNavbarSchema } from "../types/app.types.js";
 
 export const toolHandlers = {
@@ -612,6 +616,14 @@ export const toolHandlers = {
       if (!pagesResult.success) {
         throw new Error(`Failed to get app pages: ${pagesResult.message}`);
       }
+
+      // Get role information (excluding administrator)
+      const existingPermissions = appContract?.permission || {};
+      const filteredRoles = Object.keys(existingPermissions).filter(
+        (roleName) => roleName.toLowerCase() !== "administrator"
+      );
+      const totalRoles = filteredRoles.length;
+
       // Step 3: Create navbar using the enhanced service
       const result = await createNavbar({
         ...params,
@@ -625,23 +637,21 @@ export const toolHandlers = {
             {
               type: "text" as const,
               text:
-                `✅ **Navbar Created Successfully**\n\n` +
+                `✅ **Role-Based Navbars Created Successfully**\n\n` +
                 `📋 **Navbar Details:**\n` +
-                `  • Name: ${params.navbarName}\n` +
+                `  • Total Roles in App: ${
+                  Object.keys(existingPermissions).length
+                }\n` +
+                `  • Navbars Created: ${totalRoles} (Administrator excluded)\n` +
+                `  • Roles: ${filteredRoles.join(", ")}\n` +
+                `  • Total Pages Available: ${
+                  pagesResult.pages?.length || 0
+                }\n` +
                 `  • Navbar ID: ${result.navbar_id || "Generated"}\n` +
                 `  • User Mapping ID: ${
                   result.user_mapping_id || "Not mapped"
-                }\n` +
-                `  • Total Groups: ${result.navbar_items.length}\n` +
-                `  • Total Pages: ${result.navbar_items.reduce(
-                  (total, item) =>
-                    total + (item.children ? item.children.length : 0),
-                  0
-                )}\n` +
-                `  • Role Mappings: ${
-                  Object.keys(result.role_mappings).length
-                } roles configured\n\n` +
-                `🎯 **Generated Structure:**\n` +
+                }\n\n` +
+                `🎯 **Generated Navbar Structure:**\n` +
                 result.navbar_items
                   .map(
                     (item) =>
@@ -658,7 +668,17 @@ export const toolHandlers = {
                         : "")
                   )
                   .join("\n\n") +
-                `\n\n📊 **Summary:** ${result.message}`,
+                `\n\n📊 **Role-Based Page Access:**\n` +
+                `  • Pages filtered by role permissions (loco_permission)\n` +
+                `  • All routes use page_id format: /{page_id}\n` +
+                `  • SOW structure maintained across all roles\n` +
+                `  • Administrator role excluded from creation\n\n` +
+                `🔧 **Tools Executed:**\n` +
+                `  • get-app-contract: ✅ Retrieved roles and objects\n` +
+                `  • get-app-pages: ✅ Retrieved ${
+                  pagesResult.pages?.length || 0
+                } pages\n\n` +
+                `📈 **Summary:** ${result.message}`,
             },
           ],
         };
@@ -667,7 +687,7 @@ export const toolHandlers = {
           content: [
             {
               type: "text" as const,
-              text: `❌ **Failed to create navbar:** ${result.message}`,
+              text: `❌ **Failed to create navbars:** ${result.message}`,
             },
           ],
         };
@@ -677,7 +697,7 @@ export const toolHandlers = {
         content: [
           {
             type: "text" as const,
-            text: `❌ **Error creating navbar:** ${err.message || err}`,
+            text: `❌ **Error creating navbars:** ${err.message || err}`,
           },
         ],
       };
@@ -764,6 +784,137 @@ ${pagesText}
           {
             type: "text" as const,
             text: `❌ Error retrieving pages: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Create job title
+  "create-job-title": async (params: CreateJobTitleParams) => {
+    try {
+      const result = await createJobTitle(params);
+
+      if (result.success) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `✅ **Job Titles Created Successfully**\n\n` +
+                `📋 **Job Title Details:**\n` +
+                `  • Application ID: ${params.appId}\n` +
+                `  • Department: ${params.department || "Engineering"}\n` +
+                `  • Assigned To: ${params.assignedTo || "System"}\n` +
+                `  • Total Job Titles Created: ${
+                  result.created_job_titles?.length || 0
+                }\n` +
+                `  • Administrator Role: Excluded from creation\n\n` +
+                `🎯 **Created Job Titles:**\n` +
+                (result.created_job_titles
+                  ? result.created_job_titles
+                      .map(
+                        (jt) =>
+                          `  📝 **${jt.jobTitleName}**\n` +
+                          `    └─ Role: ${jt.role}\n` +
+                          `    └─ Role ID: ${jt.roleId}\n` +
+                          `    └─ Navbar ID: ${
+                            jt.navbarId || "Not assigned"
+                          }\n` +
+                          `    └─ Job Title ID: ${jt.jobTitleId || "Generated"}`
+                      )
+                      .join("\n\n")
+                  : "No job titles created") +
+                `\n\n🔧 **Integration Details:**\n` +
+                `  • Each job title is linked to its corresponding role\n` +
+                `  • Job titles are mapped to created navbars automatically\n` +
+                `  • All job titles are set to active status\n` +
+                `  • Role-based permissions are inherited\n\n` +
+                `📊 **Summary:** ${result.message}`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `❌ **Failed to create job titles:** ${result.message}`,
+            },
+          ],
+        };
+      }
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ **Error creating job titles:** ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
+
+  // Create user
+  "create-user": async (params: CreateUserParams) => {
+    try {
+      const result = await createUser(params);
+
+      if (result.success) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text:
+                `✅ **Users Created Successfully**\n\n` +
+                `👥 **User Creation Details:**\n` +
+                `  • Application ID: ${params.appId}\n` +
+                `  • Department: ${params.department || "Engineering"}\n` +
+                `  • Total Users Created: ${
+                  result.created_users?.length || 0
+                }\n` +
+                `  • Administrator Role: Excluded from creation\n\n` +
+                `🎯 **Created Users:**\n` +
+                (result.created_users
+                  ? result.created_users
+                      .map(
+                        (user) =>
+                          `  👤 **${user.userName}**\n` +
+                          `    └─ Role: ${user.role}\n` +
+                          `    └─ Email: ${user.email}\n` +
+                          `    └─ Job Title: ${user.jobTitle}\n` +
+                          `    └─ Department: ${user.department}\n` +
+                          `    └─ User ID: ${user.userId || "Generated"}`
+                      )
+                      .join("\n\n")
+                  : "No users created") +
+                `\n\n🔧 **Integration Details:**\n` +
+                `  • Each user is linked to their corresponding role and job title\n` +
+                `  • Users are mapped to navbars via role associations\n` +
+                `  • All users are set to 'todo' status (ready for assignment)\n` +
+                `  • Email format: {app_slug}.{rolename}@amoga.app\n` +
+                `  • Passwords are set to email address (changeable)\n\n` +
+                `📊 **Summary:** ${result.message}`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `❌ **Failed to create users:** ${result.message}`,
+            },
+          ],
+        };
+      }
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ **Error creating users:** ${err.message || err}`,
           },
         ],
       };

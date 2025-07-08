@@ -722,7 +722,9 @@ export const CreateNavbarSchema = z.object({
     .string()
     .email()
     .describe("Email address of the user creating the navbar"),
-  navbarName: z.string().describe("Display name for the navbar"),
+  navbarName: z
+    .array(z.string())
+    .describe("Array of navbar names for each role (excluding administrator)"),
   includeRoleMapping: z
     .boolean()
     .optional()
@@ -737,7 +739,7 @@ export interface CreateNavbarParams {
   appId: string;
   tenantName: string;
   email: string;
-  navbarName: string;
+  navbarName: string[];
   includeRoleMapping?: boolean;
   appContract?: any; // Optional for when called from handler
   appPages?: AppPage[]; // Optional for when called from handler
@@ -809,4 +811,146 @@ export interface GetAppPagesResponse {
   total: number;
   filtered: boolean;
   message: string;
+}
+
+// Job Title Creation Types
+export interface UserManagementData {
+  applications: Array<{
+    value: string;
+    label: string;
+  }>;
+  navbar: Array<{
+    value: string;
+    label: string;
+  }>;
+  roles: Array<{
+    value: string;
+    label: string;
+  }>;
+}
+
+export const CreateJobTitleSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  appId: z.string().describe("The application ID to create job title for"),
+  tenantName: z.string().describe("The tenant name"),
+  email: z
+    .string()
+    .email()
+    .describe("Email address of the user creating the job title"),
+  jobTitleNames: z
+    .array(z.string())
+    .describe(
+      "Array of job title names for each role (excluding administrator)"
+    ),
+  department: z
+    .string()
+    .optional()
+    .default("Engineering")
+    .describe("Department name for the job title"),
+  assignedTo: z
+    .string()
+    .optional()
+    .default("System")
+    .describe("Entity the job title is assigned to"),
+});
+
+export interface CreateJobTitleParams {
+  baseUrl: string;
+  appId: string;
+  tenantName: string;
+  email: string;
+  jobTitleNames: string[];
+  department?: string;
+  assignedTo?: string;
+}
+
+export interface JobTitleResponse {
+  success: boolean;
+  message: string;
+  created_job_titles?: Array<{
+    role: string;
+    jobTitleName: string;
+    roleId: string;
+    navbarId?: string;
+    jobTitleId?: string;
+  }>;
+}
+
+// Create User Types
+export interface MasterData {
+  jobtitleNUQ: Array<{
+    value: string;
+    label: string;
+  }>;
+  departmeNSR: Array<{
+    value: string;
+    label: string;
+  }>;
+  assignedEPK: Array<{
+    value: string;
+    label: string;
+  }>;
+  assignedLJS: Array<{
+    value: string;
+    label: string;
+  }>;
+  assignedPBV: Array<{
+    value: string;
+    label: string;
+  }>;
+}
+
+export const CreateUserSchema = z.object({
+  baseUrl: z.string().url().describe("The base URL of the backend system"),
+  appId: z.string().describe("The application ID to create users for"),
+  tenantName: z.string().describe("The tenant name"),
+  email: z
+    .string()
+    .email()
+    .describe("Email address of the user creating the users"),
+  userNames: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Array of user names for each role (optional - will use role names if not provided)"
+    ),
+  department: z
+    .string()
+    .optional()
+    .default("Engineering")
+    .describe("Department name for the users"),
+  phoneNumbers: z
+    .array(z.string())
+    .optional()
+    .describe("Array of phone numbers for users (optional)"),
+  passwords: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Array of passwords for users (optional - will use email as password if not provided)"
+    ),
+});
+
+export interface CreateUserParams {
+  baseUrl: string;
+  appId: string;
+  tenantName: string;
+  email: string;
+  userNames?: string[];
+  department?: string;
+  phoneNumbers?: string[];
+  passwords?: string[];
+}
+
+export interface UserResponse {
+  success: boolean;
+  message: string;
+  created_users?: Array<{
+    role: string;
+    userName: string;
+    email: string;
+    jobTitle: string;
+    department: string;
+    userId?: string;
+  }>;
 }
