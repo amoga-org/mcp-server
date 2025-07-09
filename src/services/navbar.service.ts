@@ -12,32 +12,6 @@ import { v4 as uuidv4 } from "uuid";
  * @param appName - The application name
  * @returns Generated navbar name
  */
-const generateNavbarName = (roleName: string, appName?: string): string => {
-  const roleNames: Record<string, string> = {
-    admin: "Administrator",
-    administrator: "Administrator",
-    manager: "Manager",
-    team_member: "Team Member",
-    user: "User",
-    employee: "Employee",
-    supervisor: "Supervisor",
-    lead: "Team Lead",
-    analyst: "Data Analyst",
-    developer: "Developer",
-    designer: "Designer",
-  };
-
-  const cleanRoleName =
-    roleNames[roleName.toLowerCase()] ||
-    roleName
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-
-  const appPrefix = appName ? `${appName.split(" ")[0]} ` : "";
-  return `${appPrefix}${cleanRoleName} Navigation`;
-};
-
 /**
  * Filter pages based on role permissions
  * @param pages - All available pages
