@@ -747,7 +747,8 @@ export async function publishApp(params: PublishAppParams): Promise<{
   message: string;
   data?: any;
 }> {
-  const { baseUrl, appId, tenantName,version } = params;
+  const { baseUrl, appId, tenantName } = params;
+  const contract = await getAppContract({ baseUrl, tenantName, appId });
 
   const { token } = await getCrmToken(baseUrl, tenantName);
   try {
@@ -759,7 +760,7 @@ export async function publishApp(params: PublishAppParams): Promise<{
           "content-type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ version: version }),
+        body: JSON.stringify({ version: contract.version }),
       }
     );
 
