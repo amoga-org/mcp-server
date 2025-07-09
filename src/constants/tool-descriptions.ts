@@ -182,7 +182,8 @@ export const TOOL_DESCRIPTIONS = {
     "⚠️ Run after CREATE_UPDATE_ROLES and before CHECK_PUBLISH_STATUS.\n\n" +
     "This will initiate the application deployment process and make the application available for use. " +
     "After publishing, you must run CHECK_PUBLISH_STATUS to monitor and ensure all components are successfully deployed " +
-    "before proceeding with SOT (Status Origination Tree) creation and dummy data generation.",
+    "before proceeding with SOT (Status Origination Tree) creation and dummy data generation." +
+    "get version from app contract and pass it as a parameter to the API call.\n\n",
 
   CHECK_PUBLISH_STATUS:
     "Step 7 in app creation workflow: Check if application publishing process is completed by monitoring deployment status. " +

@@ -2,6 +2,88 @@ import { getCrmToken } from "./app.service.js";
 import { GenerateWorkflowParams } from "../types/app.types.js";
 import { getAppContract, publishApp } from "./app.service.js";
 
+interface TaskRelationItem {
+  slug: string;
+  name: string;
+}
+
+interface TaskSchemaItem {
+  tl_x: number | null;
+  tl_y: number | null;
+  tr_x: number | null;
+  tr_y: number | null;
+  bl_x: number | null;
+  bl_y: number | null;
+  br_x: number | null;
+  br_y: number | null;
+  xp: number | null;
+  yp: number | null;
+  x: number | null;
+  y: number | null;
+  w: number | null;
+  h: number | null;
+  actions: any[];
+  isBlockedOn: any[];
+  rules: any[];
+  unmapped: boolean;
+  slug: string;
+  display_name: string;
+  taskname: string;
+  parent: string;
+  is_update: boolean;
+  sentry: any[];
+  tasks: any[];
+  untouched: boolean;
+  isDefault: boolean;
+  isDefaultCondition: string;
+  repetetion: boolean;
+  manualActivation: boolean;
+  type: string;
+}
+
+const getTaskSchema = (
+  taskRelation: TaskRelationItem[],
+  parent: string
+): TaskSchemaItem[] => {
+  const updatedTaskSchema: TaskSchemaItem[] = [];
+  taskRelation.forEach((el: TaskRelationItem) => {
+    updatedTaskSchema.push({
+      tl_x: null,
+      tl_y: null,
+      tr_x: null,
+      tr_y: null,
+      bl_x: null,
+      bl_y: null,
+      br_x: null,
+      br_y: null,
+      xp: null,
+      yp: null,
+      x: null,
+      y: null,
+      w: null,
+      h: null,
+      actions: [],
+      isBlockedOn: [],
+      rules: [],
+      unmapped: true,
+      slug: el.slug,
+      display_name: el.name,
+      taskname: el.slug,
+      parent: parent,
+      is_update: true,
+      sentry: [],
+      tasks: [],
+      untouched: true,
+      isDefault: false,
+      isDefaultCondition: "",
+      repetetion: true,
+      manualActivation: false,
+      type: "task",
+    });
+  });
+  return updatedTaskSchema;
+};
+
 /**
  * Generate CMMN XML for a case object
  * @param appId - Application ID
@@ -68,8 +150,6 @@ export const deployCmmnWorkflow = async (
 ): Promise<any> => {
   try {
     const formData = new FormData();
-
-    // Create file blob with CMMN content
     const xmlBlob = new Blob([cmmnXml], { type: "application/octet-stream" });
     formData.append("files", xmlBlob, `${caseSlug}flowableCase.cmmn.xml`);
     formData.append("app_name", appName);
@@ -116,7 +196,8 @@ export const saveWorkflowConfig = async (
   appName: string,
   caseSlug: string,
   caseName: string,
-  deploymentData: any
+  deploymentData: any,
+  relationship: any[] = []
 ): Promise<any> => {
   try {
     const workflowConfig = {
@@ -125,20 +206,20 @@ export const saveWorkflowConfig = async (
           name: caseName,
           slug: caseSlug,
           uuid: generateUUID(),
-          cmmnId: generateUUID(),
-          deploymentId: deploymentData?.deploymentId || "",
-          relationship: [],
+          cmmnId: deploymentData.data.appDefinition.definition.cmmnModels[0].id,
+          deploymentId: deploymentData.data.appDefinition.id || "",
+          relationship: relationship.map((el) => el.slug) || [],
           stages: [],
-          tasks: [],
+          tasks: getTaskSchema(relationship, caseSlug) || [],
           new: true,
         },
       },
       application: appId,
       object_slug: caseSlug,
       meta_data: {
-        flow_app_id: generateUUID(),
+        flow_app_id: deploymentData.data.appDefinition.id,
         flow_app_name: appName,
-        flow_app_key: `${appName}_${Date.now()}`,
+        flow_app_key: deploymentData.data.appDefinition.key,
       },
     };
 
@@ -173,48 +254,43 @@ export const generateWorkflows = async (
 ): Promise<any> => {
   try {
     const { token } = await getCrmToken(params.baseUrl, params.tenantName);
-
-    let appName = params.appName;
-    let caseObjects = params.caseObjects;
-
-    // If appName or caseObjects are not provided, fetch from app contract
-    if (!appName || !caseObjects) {
-      try {
-        const contractResult = await getAppContract({
-          baseUrl: params.baseUrl,
-          appId: params.appId,
-          tenantName: params.tenantName,
-        });
-
-        if (!appName && contractResult.application_name) {
-          appName = contractResult.application_name;
-        }
-
-        if (!caseObjects && contractResult.contract_json.objects) {
-          // Filter STRICTLY for workitem-type objects only
-          // Workitem objects are for workflow/case management
-          caseObjects = contractResult.contract_json.objects
-            .filter((obj: any) => {
-              // Only process objects with type 'workitem' - these are workflow case objects
-              return obj.type === "workitem";
-            })
-            .map((obj: any) => ({
-              name: obj.name,
-              slug: obj.slug || obj.name.toLowerCase().replace(/\s+/g, "_"),
-            }));
-        }
-      } catch (contractError) {
-        throw new Error(
-          `Failed to fetch app contract: ${
-            contractError instanceof Error
-              ? contractError.message
-              : "Unknown error"
-          }`
-        );
+    let appName = "";
+    let caseObjects = [];
+    const contractResult = await getAppContract({
+      baseUrl: params.baseUrl,
+      appId: params.appId,
+      tenantName: params.tenantName,
+    });
+    try {
+      if (contractResult.contract_json.slug) {
+        appName = contractResult.contract_json.slug;
       }
+      if (contractResult.contract_json.objects) {
+        caseObjects = contractResult.contract_json.objects
+          .filter((obj: any) => {
+            return obj.type === "workitem";
+          })
+          .map((obj: any) => ({
+            name: obj.name,
+            slug: obj.slug || obj.name.toLowerCase().replace(/\s+/g, "_"),
+            relationship:
+              obj.relationship
+                ?.filter((item: any) => !item.is_external)
+                ?.map((el: any) => ({
+                  name: el.destination_display_name,
+                  slug: el.destination_object_slug,
+                })) || [],
+          }));
+      }
+    } catch (contractError) {
+      throw new Error(
+        `Failed to fetch app contract: ${
+          contractError instanceof Error
+            ? contractError.message
+            : "Unknown error"
+        }`
+      );
     }
-
-    // Validate we have required data
     if (!appName) {
       throw new Error(
         "Application name is required and could not be fetched from app contract"
@@ -226,42 +302,34 @@ export const generateWorkflows = async (
         "No workitem objects found. Please provide workitem objects or ensure the app has workitem-type objects (type: 'workitem') in its contract"
       );
     }
+    // if (params.caseObjects && params.caseObjects.length > 0) {
+    //   try {
+    //     const validCaseObjects =
+    //       contractResult.contract_json.objects?.filter(
+    //         (obj: any) => obj.type === "workitem"
+    //       ) || [];
+    //     const validCaseSlugs = validCaseObjects.map(
+    //       (obj: any) => obj.slug || obj.name.toLowerCase().replace(/\s+/g, "_")
+    //     );
 
-    // If case objects were provided manually, validate they are actually case-type objects
-    if (params.caseObjects && params.caseObjects.length > 0) {
-      try {
-        const contractResult = await getAppContract({
-          baseUrl: params.baseUrl,
-          appId: params.appId,
-          tenantName: params.tenantName,
-        });
-
-        const validCaseObjects =
-          contractResult.contract_json.objects?.filter(
-            (obj: any) => obj.type === "workitem"
-          ) || [];
-        const validCaseSlugs = validCaseObjects.map(
-          (obj: any) => obj.slug || obj.name.toLowerCase().replace(/\s+/g, "_")
-        );
-
-        // Validate each provided case object
-        for (const providedCase of params.caseObjects) {
-          if (!validCaseSlugs.includes(providedCase.slug)) {
-            throw new Error(
-              `Invalid case object '${providedCase.name}' (${providedCase.slug}). Only workitem objects (type: 'workitem') are allowed for workflow generation.`
-            );
-          }
-        }
-      } catch (contractError) {
-        throw new Error(
-          `Failed to validate case objects against app contract: ${
-            contractError instanceof Error
-              ? contractError.message
-              : "Unknown error"
-          }`
-        );
-      }
-    }
+    //     // Validate each provided case object
+    //     for (const providedCase of params.caseObjects) {
+    //       if (!validCaseSlugs.includes(providedCase.slug)) {
+    //         throw new Error(
+    //           `Invalid case object '${providedCase.name}' (${providedCase.slug}). Only workitem objects (type: 'workitem') are allowed for workflow generation.`
+    //         );
+    //       }
+    //     }
+    //   } catch (contractError) {
+    //     throw new Error(
+    //       `Failed to validate case objects against app contract: ${
+    //         contractError instanceof Error
+    //           ? contractError.message
+    //           : "Unknown error"
+    //       }`
+    //     );
+    //   }
+    // }
 
     const results = [];
 
@@ -292,7 +360,8 @@ export const generateWorkflows = async (
           appName,
           caseObj.slug,
           caseObj.name,
-          deploymentResult
+          deploymentResult,
+          caseObj.relationship || []
         );
 
         results.push({
@@ -323,6 +392,7 @@ export const generateWorkflows = async (
           baseUrl: params.baseUrl,
           appId: params.appId,
           tenantName: params.tenantName,
+          version: contractResult.contract_json.version,
         });
         publishSuccess = true;
       } catch (publishError) {

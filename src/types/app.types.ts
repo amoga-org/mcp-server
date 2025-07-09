@@ -546,12 +546,14 @@ export const PublishAppSchema = z.object({
   baseUrl: z.string().url().describe("The base URL of the backend system"),
   appId: z.string().describe("The application ID to publish"),
   tenantName: z.string().describe("The tenant name"),
+  version: z.string().describe("The version of app contract version"),
 });
 
 export interface PublishAppParams {
   baseUrl: string;
   appId: string;
   tenantName: string;
+  version: string;
 }
 
 // Check Publish Status Schema and Interface
@@ -608,11 +610,14 @@ export const GenerateWorkflowSchema = z.object({
 export interface GenerateWorkflowParams {
   baseUrl: string;
   appId: string;
-  appName?: string;
   tenantName: string;
   caseObjects?: Array<{
     name: string;
     slug: string;
+    relationship?: Array<{
+      name: string;
+      slug: string;
+    }>;
   }>;
 }
 
