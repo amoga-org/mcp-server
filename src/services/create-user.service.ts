@@ -86,6 +86,67 @@ const generateEmail = (appSlug: string, roleName: string): string => {
 };
 
 /**
+ * Check if user already exists by email
+ * @param baseUrl - The base URL of the backend system
+ * @param tenantName - Tenant name
+ * @param email - User email to check
+ * @param token - Authentication token
+ * @returns Promise<boolean> - true if user exists, false otherwise
+ */
+export const checkUserExists = async (
+  baseUrl: string,
+  tenantName: string,
+  email: string,
+  token: string
+): Promise<boolean> => {
+  try {
+    const response = await fetch(
+      `https://${tenantName}.amoga.app/api/v2/object/usersmjjs/find`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          accept: "application/json, text/plain, */*",
+        },
+        body: JSON.stringify({
+          select: {
+            name: true,
+            emailid_cub: true,
+            id: true,
+          },
+          where: {
+            AND: [
+              {
+                emailid_cub: email,
+              },
+            ],
+          },
+          orderBy: [
+            {
+              id: "desc",
+            },
+          ],
+          skip: 0,
+          take: 10,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(`Failed to check user existence: ${response.statusText}`);
+      return false; // Assume user doesn't exist if check fails
+    }
+
+    const result = await response.json();
+    return result.data && result.data.length > 0;
+  } catch (error) {
+    console.warn(`Error checking user existence: ${error}`);
+    return false; // Assume user doesn't exist if check fails
+  }
+};
+
+/**
  * Create users via API
  * @param params - User creation parameters
  * @returns Promise with creation result
@@ -103,9 +164,7 @@ export const createUser = async (
     });
 
     // Find the core application with slug 'coreapplGAT'
-    const coreApp = allApps.find(
-      (app: any) => app.slug === "coreapplGAT"
-    );
+    const coreApp = allApps.find((app: any) => app.slug === "coreapplGAT");
 
     if (!coreApp) {
       return {
@@ -156,6 +215,7 @@ export const createUser = async (
     }
 
     const createdUsers = [];
+    const skippedUsers = [];
     let userNameIndex = 0;
 
     // Create user for each role (excluding administrator)
@@ -181,6 +241,25 @@ export const createUser = async (
 
         // Generate email
         const userEmail = generateEmail(appSlug, roleName);
+
+        // Check if user already exists
+        const userExists = await checkUserExists(
+          params.baseUrl,
+          params.tenantName,
+          userEmail,
+          token
+        );
+
+        if (userExists) {
+          skippedUsers.push({
+            role: roleName,
+            userName: userName,
+            email: userEmail,
+            reason: "User with this email already exists",
+          });
+          userNameIndex++;
+          continue;
+        }
 
         // Use provided password or default to email
         const userPassword =
@@ -300,31 +379,50 @@ export const createUser = async (
       }
     }
 
-    if (createdUsers.length === 0) {
+    if (createdUsers.length === 0 && skippedUsers.length === 0) {
       return {
         success: false,
         message: `Failed to create any users. Processed ${filteredRoles.length} roles but all failed. Check console logs for detailed error information.`,
       };
     }
 
-    const rolesList = createdUsers.map((user) => user.role).join(", ");
-    const successMessage = `Successfully created ${
-      createdUsers.length
-    } users for roles: ${rolesList} (Administrator role excluded).\n\nUsers Created:\n${createdUsers
-      .map(
-        (user) =>
-          `• ${user.userName} (${user.role})\n  └─ Email: ${user.email}\n  └─ Job Title: ${user.jobTitle}\n  └─ Department: ${user.department}`
-      )
-      .join(
-        "\n\n"
-      )}\n\nEach user is configured with:\n• Status: TODO (ready for assignment)\n• Email: Generated as ${appSlug}.{rolename}@amoga.app\n• Job Title: Mapped from created job titles\n• Department: ${
-      params.department || "Engineering"
-    }\n• App Assignment: Linked to current application\n• Password: Set to email address (can be changed)\n\nUsers are automatically linked to their corresponding roles and job titles.`;
+    let successMessage = "";
+
+    if (createdUsers.length > 0) {
+      const rolesList = createdUsers.map((user) => user.role).join(", ");
+      successMessage += `Successfully created ${
+        createdUsers.length
+      } users for roles: ${rolesList}.\n\nUsers Created:\n${createdUsers
+        .map(
+          (user) =>
+            `• ${user.userName} (${user.role})\n  └─ Email: ${user.email}\n  └─ Job Title: ${user.jobTitle}\n  └─ Department: ${user.department}`
+        )
+        .join("\n\n")}`;
+    }
+
+    if (skippedUsers.length > 0) {
+      if (successMessage) successMessage += "\n\n";
+      successMessage += `Skipped ${
+        skippedUsers.length
+      } users (already exist):\n${skippedUsers
+        .map(
+          (user) =>
+            `• ${user.userName} (${user.role})\n  └─ Email: ${user.email}\n  └─ Reason: ${user.reason}`
+        )
+        .join("\n\n")}`;
+    }
+
+    if (createdUsers.length > 0) {
+      successMessage += `\n\nEach new user is configured with:\n• Status: TODO (ready for assignment)\n• Email: Generated as ${appSlug}.{rolename}@amoga.app\n• Job Title: Mapped from created job titles\n• Department: ${
+        params.department || "Engineering"
+      }\n• App Assignment: Linked to current application\n• Password: Set to email address (can be changed)\n\nUsers are automatically linked to their corresponding roles and job titles.`;
+    }
 
     return {
       success: true,
       message: successMessage,
       created_users: createdUsers,
+      skipped_users: skippedUsers,
     };
   } catch (error) {
     return {

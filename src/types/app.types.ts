@@ -963,4 +963,10 @@ export interface UserResponse {
     department: string;
     userId?: string;
   }>;
+  skipped_users?: Array<{
+    role: string;
+    userName: string;
+    email: string;
+    reason: string;
+  }>;
 }
