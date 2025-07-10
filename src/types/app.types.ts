@@ -750,6 +750,33 @@ export interface CreateNavbarParams {
   appPages?: AppPage[]; // Optional for when called from handler
 }
 
+// Full sidebar props interface for navbar creation
+export interface SidebarProps {
+  uuid: string;
+  display_name: string;
+  rank: number;
+  icon: {
+    type: string;
+    name: string;
+    version: number;
+    style: string;
+    svg: string;
+    color: string;
+    imgurl: string;
+  };
+  type: string;
+  is_active: boolean;
+  children: SidebarProps[];
+  meta_data: Record<string, any>;
+  route: string;
+  app_id?: string;
+  is_default: boolean;
+  is_custom: boolean;
+  default_homepage_type: string;
+  view_type: string;
+  is_mobile?: boolean; // Optional mobile flag
+}
+
 export interface NavbarItem {
   id: string;
   display_name: string;

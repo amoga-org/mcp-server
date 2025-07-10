@@ -3,6 +3,7 @@ import {
   CreateNavbarParams,
   NavbarItem,
   NavbarResponse,
+  SidebarProps,
 } from "../types/app.types.js";
 import { v4 as uuidv4 } from "uuid";
 
@@ -54,7 +55,7 @@ const createSOWNavbarTemplate = (
   appId: string,
   rolePermissions: any,
   isAdminRole: boolean = false
-) => {
+): SidebarProps[] => {
   // Filter pages based on role permissions
   const accessiblePages = filterPagesByRolePermissions(pages, rolePermissions);
 
@@ -69,7 +70,7 @@ const createSOWNavbarTemplate = (
         !page.type)
   );
 
-  const sidebarProps = [];
+  const sidebarProps: SidebarProps[] = [];
   let currentRank = 2;
 
   // 1. DASHBOARD GROUP (Rank 1)
@@ -655,7 +656,7 @@ export const createNavbar = async (
           is_custom: true,
           meta_data: {},
           view_type: "item",
-          //   is_mobile: true,
+          is_mobile: true,
           is_default: false,
           display_name: "Settings",
           default_homepage_type: "",
