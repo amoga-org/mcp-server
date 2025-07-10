@@ -1,4 +1,4 @@
-import { getCrmToken } from "./app.service.js";
+import { getAllApps, getCrmToken } from "./app.service.js";
 import {
   CreateJobTitleParams,
   JobTitleResponse,
@@ -95,6 +95,26 @@ export const createJobTitle = async (
   try {
     const { token } = await getCrmToken(params.baseUrl, params.tenantName);
 
+    // Get all apps to find the core application
+    const allApps = await getAllApps({
+      baseUrl: params.baseUrl,
+      tenantName: params.tenantName,
+    });
+
+    // Find the core application with slug 'coreapplGAT'
+    const coreApp = allApps.find(
+      (app: any) => app.slug === "coreapplGAT"
+    );
+
+    if (!coreApp) {
+      return {
+        success: false,
+        message: "Core application with slug 'coreapplGAT' not found",
+      };
+    }
+
+    const coreAppId = coreApp.uuid;
+
     // Get user management data to extract roles, navbars, and app info
     const managementData = await getUserManagementData(
       params.baseUrl,
@@ -172,7 +192,7 @@ export const createJobTitle = async (
         };
         // Create job title via API
         const response = await fetch(
-          `https://${params.tenantName}.amoga.app/api/v2/create/object/flow/e23b7e76-2b00-4323-b495-5da9eee1fec1?sync=true`,
+          `https://${params.tenantName}.amoga.app/api/v2/create/object/flow/${coreAppId}?sync=true`,
           {
             method: "POST",
             headers: {

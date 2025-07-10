@@ -1,4 +1,4 @@
-import { getCrmToken } from "./app.service.js";
+import { getCrmToken, getAllApps } from "./app.service.js";
 import {
   CreateUserParams,
   UserResponse,
@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from "uuid";
  */
 export const getMasterData = async (
   baseUrl: string,
-  appId: string,
+  coreAppId: string,
   token: string,
   jobTitle?: string
 ): Promise<MasterData> => {
@@ -27,7 +27,7 @@ export const getMasterData = async (
     const encodedJobTitle = jobTitle ? encodeURIComponent(jobTitle) : "";
 
     const response = await fetch(
-      `${baseUrl}/api/v2/work/get/all/master/data/e23b7e76-2b00-4323-b495-5da9eee1fec1?jobtitleNUQ=${encodedJobTitle}&departmeNSR=&assignedEPK=&assignedLJS=&assignedPBV=`,
+      `${baseUrl}/api/v2/work/get/all/master/data/${coreAppId}?jobtitleNUQ=${encodedJobTitle}&departmeNSR=&assignedEPK=&assignedLJS=&assignedPBV=`,
       {
         method: "GET",
         headers: {
@@ -82,7 +82,7 @@ const generateUserName = (roleName: string): string => {
 const generateEmail = (appSlug: string, roleName: string): string => {
   const cleanRoleName = roleName.toLowerCase().replace(/\s+/g, "");
   const cleanAppSlug = appSlug.toLowerCase().replace(/[^a-zA-Z0-9]/g, "");
-  return `${cleanAppSlug}.${cleanRoleName}@amoga.io`;
+  return `${cleanAppSlug}.${cleanRoleName}@amoga.app`;
 };
 
 /**
@@ -95,6 +95,26 @@ export const createUser = async (
 ): Promise<UserResponse> => {
   try {
     const { token } = await getCrmToken(params.baseUrl, params.tenantName);
+
+    // Get all apps to find the core application
+    const allApps = await getAllApps({
+      baseUrl: params.baseUrl,
+      tenantName: params.tenantName,
+    });
+
+    // Find the core application with slug 'coreapplGAT'
+    const coreApp = allApps.find(
+      (app: any) => app.slug === "coreapplGAT"
+    );
+
+    if (!coreApp) {
+      return {
+        success: false,
+        message: "Core application with slug 'coreapplGAT' not found",
+      };
+    }
+
+    const coreAppId = coreApp.uuid;
 
     // Get user management data to extract roles and app info
     const managementData = await getUserManagementData(
@@ -147,7 +167,7 @@ export const createUser = async (
         // Get master data for this specific role name as job title
         const masterData = await getMasterData(
           params.baseUrl,
-          params.appId,
+          coreAppId,
           token,
           ""
         );
@@ -182,7 +202,7 @@ export const createUser = async (
 
         const masterData_ = await getMasterData(
           params.baseUrl,
-          params.appId,
+          coreAppId,
           token,
           jobTitle?.value
         );
@@ -240,7 +260,7 @@ export const createUser = async (
 
         // Create user via API
         const response = await fetch(
-          `https://${params.tenantName}.amoga.app/api/v2/create/object/flow/e23b7e76-2b00-4323-b495-5da9eee1fec1?sync=true`,
+          `https://${params.tenantName}.amoga.app/api/v2/create/object/flow/${coreAppId}?sync=true`,
           {
             method: "POST",
             headers: {
