@@ -70,7 +70,7 @@ const createSOWNavbarTemplate = (
   );
 
   const sidebarProps = [];
-  let currentRank = 1;
+  let currentRank = 2;
 
   // 1. DASHBOARD GROUP (Rank 1)
   const dashboardPages = filteredPages.filter(
@@ -80,57 +80,81 @@ const createSOWNavbarTemplate = (
       page.display_name?.toLowerCase().includes("dashboard")
   );
 
-  if (dashboardPages.length > 0) {
-    const dashboardItems = dashboardPages.map((page: any, index: number) => ({
-      icon: {
-        svg: "chart-line",
-        name: "analytics",
-        type: "material-icons",
-        color: "#5f6368",
-        style: "solid",
-        imgurl: "https://static.amoga.io/fa/solid/chart-line.svg",
-        version: 1,
-      },
-      rank: index + 1,
-      type: "Pages",
-      uuid: uuidv4(),
-      route: `/${page.page_id}`, // Always use page_id
-      app_id: appId,
-      children: [],
-      is_active: true,
-      is_custom: true,
-      meta_data: {},
-      view_type: "item",
-      is_default: page.is_default || false,
-      display_name: page.display_name || page.name,
-      default_homepage_type: "",
-    }));
+  let dashboardItemType = {
+    uuid: uuidv4(),
+    display_name: "Dashboard",
+    rank: 1,
+    icon: {
+      type: "material-icons",
+      name: "insert_emoticon",
+      version: 1,
+      style: "light",
+      svg: "chart-line",
+      color: "#5f6368",
+      imgurl: "https://static.amoga.io/fa/light/chart-line.svg",
+    },
+    type: "External Link",
+    is_active: true,
+    children: [],
+    meta_data: {},
+    route: "https://amoga.io",
+    is_default: false,
+    is_custom: true,
+    default_homepage_type: "",
+    view_type: "item",
+  };
+  sidebarProps.push(dashboardItemType);
+  //   if (dashboardPages.length > 0) {
+  //     const dashboardItems = dashboardPages.map((page: any, index: number) => ({
+  //       icon: {
+  //         svg: "chart-line",
+  //         name: "analytics",
+  //         type: "material-icons",
+  //         color: "#5f6368",
+  //         style: "solid",
+  //         imgurl: "https://static.amoga.io/fa/solid/chart-line.svg",
+  //         version: 1,
+  //       },
+  //       rank: index + 1,
+  //       type: "Pages",
+  //       uuid: uuidv4(),
+  //       route: `/${page.page_id}`, // Always use page_id
+  //       app_id: appId,
+  //       children: [],
+  //       is_active: true,
+  //       is_custom: true,
+  //       meta_data: {},
+  //       view_type: "item",
+  //       is_default: page.is_default || false,
+  //       display_name: page.display_name || page.name,
+  //       default_homepage_type: "",
+  //     }));
 
-    sidebarProps.push({
-      icon: {
-        svg: "tachometer-alt",
-        name: "dashboard",
-        type: "material-icons",
-        color: "#1976d2",
-        style: "solid",
-        imgurl: "https://static.amoga.io/fa/solid/tachometer-alt.svg",
-        version: 1,
-      },
-      rank: currentRank++,
-      type: "",
-      uuid: uuidv4(),
-      route: "",
-      app_id: appId,
-      children: dashboardItems,
-      is_active: true,
-      is_custom: true,
-      meta_data: {},
-      view_type: "group",
-      is_default: false,
-      display_name: "Dashboard",
-      default_homepage_type: "",
-    });
-  }
+  //     sidebarProps.push({
+  //       icon: {
+  //         svg: "tachometer-alt",
+  //         name: "dashboard",
+  //         type: "material-icons",
+  //         color: "#1976d2",
+  //         style: "solid",
+  //         imgurl: "https://static.amoga.io/fa/solid/tachometer-alt.svg",
+  //         version: 1,
+  //       },
+  //       rank: currentRank++,
+  //       type: "",
+  //       uuid: uuidv4(),
+  //       route: "",
+  //       app_id: appId,
+  //       children: dashboardItems,
+  //       is_active: true,
+  //       is_custom: true,
+  //       meta_data: {},
+  //       view_type: "group",
+  //       is_default: false,
+  //       display_name: "Dashboard",
+  //       default_homepage_type: "",
+  //     });
+  //   }
 
   // 2. TASKS GROUP (Rank 2) - Only include if task objects exist and role has permission
   const taskObjects = objects.filter(
@@ -139,7 +163,7 @@ const createSOWNavbarTemplate = (
   );
   const taskPages = filteredPages.filter(
     (page: any) =>
-      page.type === "list" ||
+      page.type === "dashboard" ||
       page.name?.toLowerCase().includes("task") ||
       page.display_name?.toLowerCase().includes("task") ||
       page.workitem_type === "task"
