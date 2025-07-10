@@ -102,9 +102,7 @@ export const createJobTitle = async (
     });
 
     // Find the core application with slug 'coreapplGAT'
-    const coreApp = allApps.find(
-      (app: any) => app.slug === "coreapplGAT"
-    );
+    const coreApp = allApps.find((app: any) => app.slug === "coreapplGAT");
 
     if (!coreApp) {
       return {
@@ -148,6 +146,7 @@ export const createJobTitle = async (
     }
 
     const createdJobTitles = [];
+    const skippedJobTitles = [];
     let jobTitleNameIndex = 0;
 
     // Create job title for each role (excluding administrator)
@@ -161,6 +160,24 @@ export const createJobTitle = async (
         //   params.jobTitleNames && params.jobTitleNames[jobTitleNameIndex]
         //     ? params.jobTitleNames[jobTitleNameIndex]
         //     : generateJobTitleName(roleName, appName);
+
+        // Check if job title already exists
+        const jobTitleExists = await checkJobTitleExists(
+          params.baseUrl,
+          params.tenantName,
+          jobTitleName,
+          token
+        );
+
+        if (jobTitleExists) {
+          skippedJobTitles.push({
+            role: roleName,
+            jobTitleName: jobTitleName,
+            reason: "Job title already exists",
+          });
+          jobTitleNameIndex++;
+          continue;
+        }
 
         // Find corresponding navbar for this role
         const navbar = managementData.navbar.find((nav: any) =>
@@ -225,15 +242,26 @@ export const createJobTitle = async (
       }
     }
 
-    if (createdJobTitles.length === 0) {
+    if (createdJobTitles.length === 0 && skippedJobTitles.length === 0) {
       return {
         success: false,
         message: `Failed to create any job titles. Processed ${filteredRoles.length} roles but all failed. Check console logs for detailed error information.`,
       };
     }
 
+    if (createdJobTitles.length === 0 && skippedJobTitles.length > 0) {
+      const skippedList = skippedJobTitles
+        .map((jt) => `• ${jt.jobTitleName} (${jt.role}) - ${jt.reason}`)
+        .join("\n");
+      return {
+        success: false,
+        message: `No job titles were created. All job titles already exist:\n\n${skippedList}`,
+        skipped_job_titles: skippedJobTitles,
+      };
+    }
+
     const rolesList = createdJobTitles.map((jt) => jt.role).join(", ");
-    const successMessage = `Successfully created ${
+    let successMessage = `Successfully created ${
       createdJobTitles.length
     } job titles for roles: ${rolesList} (Administrator role excluded).\n\nJob Titles Created:\n${createdJobTitles
       .map((jt) => `• ${jt.jobTitleName} (${jt.role})`)
@@ -245,10 +273,19 @@ export const createJobTitle = async (
       params.assignedTo || appName
     }\n• Active Status: true\n\nJob titles are automatically linked to their corresponding roles and navbars.`;
 
+    if (skippedJobTitles.length > 0) {
+      const skippedList = skippedJobTitles
+        .map((jt) => `• ${jt.jobTitleName} (${jt.role}) - ${jt.reason}`)
+        .join("\n");
+      successMessage += `\n\nSkipped Job Titles (Already Exist):\n${skippedList}`;
+    }
+
     return {
       success: true,
       message: successMessage,
       created_job_titles: createdJobTitles,
+      skipped_job_titles:
+        skippedJobTitles.length > 0 ? skippedJobTitles : undefined,
     };
   } catch (error) {
     return {
@@ -257,5 +294,83 @@ export const createJobTitle = async (
         error instanceof Error ? error.message : String(error)
       }`,
     };
+  }
+};
+
+/**
+ * Check if a job title already exists
+ * @param baseUrl - The base URL of the backend system
+ * @param tenantName - The tenant name
+ * @param jobTitleName - The job title name to check
+ * @param token - Authentication token
+ * @returns Promise<boolean> - true if exists, false if not
+ */
+export const checkJobTitleExists = async (
+  baseUrl: string,
+  tenantName: string,
+  jobTitleName: string,
+  token: string
+): Promise<boolean> => {
+  try {
+    const findUrl = `https://${tenantName}.amoga.app/api/v2/object/jobtitlelyqs/find`;
+
+    const requestBody = {
+      select: {
+        jobtitle_nuq: true,
+        departme_nsr: true,
+        assigned_epk: true,
+        assigned_ljs: true,
+        assigned_pbv: true,
+        isactive_vao: true,
+        created_at: true,
+        updated_at: true,
+        id: true,
+        task_type: true,
+        metadata: true,
+        parent_id: true,
+      },
+      where: {
+        AND: [
+          {
+            jobtitle_nuq: jobTitleName,
+          },
+        ],
+      },
+      orderBy: [
+        {
+          id: "desc",
+        },
+      ],
+      skip: 0,
+      take: 10,
+    };
+
+    const response = await fetch(findUrl, {
+      method: "POST",
+      headers: {
+        accept: "application/json, text/plain, */*",
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to check job title existence: ${response.statusText}`
+      );
+    }
+
+    const data = await response.json();
+
+    // If data.length === 0, job title doesn't exist
+    // If data.length > 0, job title already exists
+    return data.data && data.data.length > 0;
+  } catch (error) {
+    throw new Error(
+      `Error checking job title existence: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 };

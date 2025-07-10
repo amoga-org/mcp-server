@@ -879,6 +879,11 @@ export interface JobTitleResponse {
     navbarId?: string;
     jobTitleId?: string;
   }>;
+  skipped_job_titles?: Array<{
+    role: string;
+    jobTitleName: string;
+    reason: string;
+  }>;
 }
 
 // Create User Types
