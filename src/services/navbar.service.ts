@@ -382,17 +382,77 @@ const generateObjectMenuItems = (
   const baseRoute = pages.length > 0 ? `/${pages[0].page_id}` : `/${obj.slug}`;
   const objectName = obj.display_name || obj.name;
 
+  // Define icons based on object type
+  const getIconForObjectType = (type: string) => {
+    switch (type) {
+      case "workitem":
+        return {
+          svg: "briefcase",
+          name: "work",
+          type: "material-icons",
+          color: "#9c27b0",
+          style: "solid",
+          imgurl: "https://static.amoga.io/fa/solid/briefcase.svg",
+          version: 1,
+        };
+      case "object":
+        return {
+          svg: "cube",
+          name: "category",
+          type: "material-icons",
+          color: "#607d8b",
+          style: "solid",
+          imgurl: "https://static.amoga.io/fa/solid/cube.svg",
+          version: 1,
+        };
+      case "task":
+        return {
+          svg: "tasks",
+          name: "assignment",
+          type: "material-icons",
+          color: "#ff9800",
+          style: "solid",
+          imgurl: "https://static.amoga.io/fa/solid/tasks.svg",
+          version: 1,
+        };
+      case "master":
+        return {
+          svg: "cog",
+          name: "settings",
+          type: "material-icons",
+          color: "#795548",
+          style: "solid",
+          imgurl: "https://static.amoga.io/fa/solid/cog.svg",
+          version: 1,
+        };
+      case "segment":
+        return {
+          svg: "tags",
+          name: "label",
+          type: "material-icons",
+          color: "#3f51b5",
+          style: "solid",
+          imgurl: "https://static.amoga.io/fa/solid/tags.svg",
+          version: 1,
+        };
+      default:
+        return {
+          svg: "folder",
+          name: "folder",
+          type: "material-icons",
+          color: "#5f6368",
+          style: "solid",
+          imgurl: "https://static.amoga.io/fa/solid/folder.svg",
+          version: 1,
+        };
+    }
+  };
+
+  const objectIcon = getIconForObjectType(objectType);
+
   const items = [
     {
-      icon: {
-        svg: "user",
-        name: "person",
-        type: "material-icons",
-        color: "#4caf50",
-        style: "solid",
-        imgurl: "https://static.amoga.io/fa/solid/user.svg",
-        version: 1,
-      },
+      icon: objectIcon,
       rank: 1,
       type: "Pages",
       uuid: uuidv4(),
