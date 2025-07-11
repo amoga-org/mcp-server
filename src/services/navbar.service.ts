@@ -55,7 +55,8 @@ const createSOWNavbarTemplate = (
   objects: any[],
   appId: string,
   rolePermissions: any,
-  isAdminRole: boolean = false
+  isAdminRole: boolean = false,
+  appIcon?: any
 ): SidebarProps[] => {
   // Filter pages based on role permissions
   const accessiblePages = filterPagesByRolePermissions(pages, rolePermissions);
@@ -271,13 +272,10 @@ const createSOWNavbarTemplate = (
       });
 
       sidebarProps.push({
-        icon: {
-          svg: "briefcase",
-          name: "work",
-          type: "material-icons",
-          color: "#9c27b0",
+        icon: appIcon || {
+          svg: "memo",
+          color: "#5f6368",
           style: "solid",
-          imgurl: "https://static.amoga.io/fa/solid/briefcase.svg",
           version: 1,
         },
         rank: currentRank++,
@@ -550,7 +548,7 @@ export const createNavbar = async (
         tenantName: params.tenantName,
       });
     }
-
+    const appIcon = appContract.contract_json?.icon;
     const existingPermissions = appContract?.permission || {};
     const rolesData = existingPermissions;
     const appName = appContract?.contract_json?.application_name;
@@ -592,7 +590,8 @@ export const createNavbar = async (
           appObjects,
           params.appId,
           roleData,
-          roleIsAdmin
+          roleIsAdmin,
+          appIcon
         );
 
         // Always add Settings at the end (but not for regular users without permissions)
@@ -702,7 +701,8 @@ export const createNavbar = async (
       appObjects,
       params.appId,
       Object.values(filteredRolesData)[0] || {},
-      false // Don't use admin for template structure generation
+      false, // Don't use admin for template structure generation
+      appIcon
     );
     const navbarItems: NavbarItem[] = templateStructure.map((item: any) => ({
       id: item.uuid,
