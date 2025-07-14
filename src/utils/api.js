@@ -1233,24 +1233,7 @@ export const createDefaultTaskPages = async (baseUrl, token, appId) => {
         "created_by",
         "updated_by",
       ],
-      myTasksObjects: [
-        // {
-        //   slug: "task_teb",
-        //   name: "Task",
-        // },
-        // {
-        //   slug: "project_nrf",
-        //   name: "Project",
-        // },
-        // {
-        //   slug: "teammember_rft",
-        //   name: "Team Member",
-        // },
-        // {
-        //   slug: "client_vde",
-        //   name: "Client",
-        // },
-      ],
+      myTasksObjects: [],
       open_parent_details_page: true,
     },
   };
