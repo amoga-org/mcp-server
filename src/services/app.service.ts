@@ -12,6 +12,7 @@ import {
   Permission,
   PublishAppParams,
 } from "../types/app.types.js";
+import { createDefaultTaskPages } from "../utils/api.js";
 
 // Helper function to get CRM token
 export async function getCrmToken(
@@ -104,7 +105,7 @@ export async function createApp(
     const appData = await createAppResponse.json();
     const appId = appData.data.uuid;
     const appSlug = appData.data.slug;
-
+    await createDefaultTaskPages(baseUrl, token, appData.data.uuid);
     return { appId, appSlug };
   } catch (error: any) {
     throw new Error(`Failed to create application: ${error.message}`);

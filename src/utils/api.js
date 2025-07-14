@@ -1044,3 +1044,351 @@ export const deleteObject = async (baseUrl, tenantName, appId, objectName) => {
   const data = await response.json();
   return data.data;
 };
+export const createDefaultTaskPages = async (baseUrl, token, appId) => {
+  const taskColumns = [
+    {
+      key: "name",
+      hide: false,
+      pinned: true,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "status",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "assignee",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "priority",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "dueDate",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "parent_name",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "object_name",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "parent_object_name",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "updated_at",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "created_at",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "created_by",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+    {
+      key: "updated_by",
+      hide: false,
+      pinned: false,
+      parent: "",
+      masked: false,
+      clickable: null,
+    },
+  ];
+
+  // Base widget configuration matching the provided structure
+  const baseWidgetConfig = {
+    type: "table",
+    display_name: "table1",
+    icon: {
+      type: "material-icons-outlined",
+      name: "10k",
+      color: "#5f6368",
+    },
+    color: "#FFA500",
+    description: "table description",
+    dynamically_binded: [],
+    is_refresh: false,
+    grid_props: {
+      w: 12,
+      h: 48,
+      x: 0,
+      y: 0,
+      i: uuidv4(),
+      minW: 6,
+      maxW: 12,
+      minH: 25,
+      maxH: 72,
+      moved: false,
+      static: false,
+      isResizable: true,
+    },
+    props: {
+      refresh: false,
+      page: {},
+      sort: [],
+      title: "Table",
+      columns: taskColumns,
+      density: true,
+      tree_view: true,
+      stick_bottom: false,
+      sort_allow: false,
+      create_allow: true,
+      filter_allow: true,
+      search_allow: true,
+      create_type: {
+        key: "tooljet",
+        value: "",
+        name: "Tooljet",
+      },
+      reorder_allow: true,
+      enable_view: false,
+      bulk_action_allow: true,
+      show_vertical_border: true,
+      show_checkbox_on_hover: true,
+      show_horizontal_border: true,
+      quick_filters: [],
+      hidden: false,
+      disable: false,
+      show_widget_title: false,
+      pagination_limit: 15,
+      actions: [],
+      record_render: "side",
+      adhoc_tasks: [],
+      export_allow: false,
+      download_limit: 10000,
+      import_allow: false,
+      import_rule_id: [],
+      open_details_page: false,
+      enable_show_closed: true,
+      show_card_on_mobile: true,
+      show_horizontal_scrollbar: false,
+      allow_navigation: true,
+      view_type: "table",
+      custom_filter: [],
+      horizontal_scrollbar_size: "4px",
+      widget_border_disabled: false,
+      table_header_color: "#EDF1F9",
+      column_header_background: "#EDF1F9",
+      column_header_color: "#2A4277",
+      rows_per_page: 100,
+      show_vertical_scrollbar: true,
+      pagination: false,
+      enable_bulk_delete: true,
+      select_as_native_on_mobile: false,
+      line_clamps: 1,
+      searchkeys: [
+        "name",
+        "status",
+        "assignee",
+        "priority",
+        "created_by",
+        "updated_by",
+      ],
+      myTasksObjects: [
+        // {
+        //   slug: "task_teb",
+        //   name: "Task",
+        // },
+        // {
+        //   slug: "project_nrf",
+        //   name: "Project",
+        // },
+        // {
+        //   slug: "teammember_rft",
+        //   name: "Team Member",
+        // },
+        // {
+        //   slug: "client_vde",
+        //   name: "Client",
+        // },
+      ],
+      open_parent_details_page: true,
+    },
+  };
+
+  const taskPages = [
+    {
+      application_id: appId,
+      display_name: "My Tasks",
+      mode: "create",
+      name: "My Tasks",
+      show_header: true,
+      type: "dashboard",
+      widgets: [
+        {
+          configs: {
+            ...baseWidgetConfig,
+            grid_props: {
+              ...baseWidgetConfig.grid_props,
+              i: uuidv4(),
+            },
+            props: {
+              ...baseWidgetConfig.props,
+              data_source: {
+                name: "My Tasks",
+                slug: "myTasks",
+              },
+              filter: {
+                value: [],
+                operator: "and",
+                parse_segment: 1,
+                rules: [
+                  {
+                    id: uuidv4(),
+                    field: "assignee",
+                    value: ["me"],
+                    hidden: false,
+                    operator: "in",
+                  },
+                ],
+              },
+            },
+          },
+          id: uuidv4(),
+          type: "table",
+        },
+      ],
+    },
+    {
+      application_id: appId,
+      display_name: "All Tasks",
+      mode: "create",
+      name: "All Tasks",
+      show_header: true,
+      type: "dashboard",
+      widgets: [
+        {
+          configs: {
+            ...baseWidgetConfig,
+            grid_props: {
+              ...baseWidgetConfig.grid_props,
+              i: uuidv4(),
+            },
+            props: {
+              ...baseWidgetConfig.props,
+              data_source: {
+                name: "My Tasks",
+                slug: "myTasks",
+              },
+              filter: {
+                value: [],
+                operator: "and",
+                parse_segment: 1,
+                rules: [],
+              },
+            },
+          },
+          id: uuidv4(),
+          type: "table",
+        },
+      ],
+    },
+    {
+      application_id: appId,
+      display_name: "Over Due",
+      mode: "create",
+      name: "Over Due",
+      show_header: true,
+      type: "dashboard",
+      widgets: [
+        {
+          configs: {
+            ...baseWidgetConfig,
+            grid_props: {
+              ...baseWidgetConfig.grid_props,
+              i: uuidv4(),
+            },
+            props: {
+              ...baseWidgetConfig.props,
+              data_source: {
+                name: "My Tasks",
+                slug: "myTasks",
+              },
+              filter: {
+                value: [],
+                operator: "and",
+                parse_segment: 1,
+                rules: [
+                  {
+                    id: uuidv4(),
+                    field: "assignee",
+                    value: ["me"],
+                    hidden: false,
+                    operator: "in",
+                  },
+                  {
+                    id: uuidv4(),
+                    field: "dueDate",
+                    value: "Overdue",
+                    hidden: false,
+                    operator: "equalsInDateRange",
+                  },
+                ],
+              },
+            },
+          },
+          id: uuidv4(),
+          type: "table",
+        },
+      ],
+    },
+  ];
+
+  // Create each page
+  for (const pageData of taskPages) {
+    try {
+      await handleUsePageTemplate(baseUrl, token, pageData);
+    } catch (error) {
+      console.warn(`Failed to create page ${pageData.display_name}:`, error);
+    }
+  }
+};
