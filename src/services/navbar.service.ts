@@ -536,6 +536,29 @@ export const createNavbar = async (
 ): Promise<NavbarResponse> => {
   try {
     const { token } = await getCrmToken(params.baseUrl, params.tenantName);
+    let publishPermissionsMessage = "";
+    try {
+      const publishPermissionsResponse = await fetch(
+        `${params.baseUrl}/api/v1/core/studio/publish/permissions/${params.appId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (publishPermissionsResponse.ok) {
+        const publishResult = await publishPermissionsResponse.json();
+        publishPermissionsMessage =
+          publishResult.data?.message || "Permissions published successfully";
+      } else {
+        const errorText = await publishPermissionsResponse.text();
+        publishPermissionsMessage = `Failed to publish permissions: ${errorText}`;
+      }
+    } catch (publishError) {
+      publishPermissionsMessage = `Error publishing permissions: ${publishError}`;
+    }
 
     let appContract = params.appContract;
     let pages = params.appPages || [];
@@ -761,7 +784,7 @@ export const createNavbar = async (
       objectTypeCounts.workitem + objectTypeCounts.object
     } objects (Cases + Objects grouped by app)\n• Admin/Master Objects: ${
       objectTypeCounts.master
-    } objects\n\nRole-based permissions applied - users only see pages they have access to.\nAll routes use page_id for navigation.\nAdministrator role excluded from navbar creation.\nWorkitem and Object types are grouped together by their application name (e.g., Sales CRM contains both Leads and Customers).`;
+    } objects\n\nRole-based permissions applied - users only see pages they have access to.\nAll routes use page_id for navigation.\nAdministrator role excluded from navbar creation.\nWorkitem and Object types are grouped together by their application name (e.g., Sales CRM contains both Leads and Customers).\n\nPermissions Status: ${publishPermissionsMessage}`;
 
     return {
       success: true,
