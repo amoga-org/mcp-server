@@ -1242,7 +1242,7 @@ export const createDefaultTaskPages = async (baseUrl, token, appId) => {
     {
       application_id: appId,
       display_name: "My Tasks",
-      mode: "create",
+      mode: "view",
       name: "My Tasks",
       show_header: true,
       type: "dashboard",
@@ -1260,6 +1260,7 @@ export const createDefaultTaskPages = async (baseUrl, token, appId) => {
                 name: "My Tasks",
                 slug: "myTasks",
               },
+              columns: taskColumns,
               filter: {
                 value: [],
                 operator: "and",
@@ -1284,7 +1285,7 @@ export const createDefaultTaskPages = async (baseUrl, token, appId) => {
     {
       application_id: appId,
       display_name: "All Tasks",
-      mode: "create",
+      mode: "view",
       name: "All Tasks",
       show_header: true,
       type: "dashboard",
@@ -1298,6 +1299,7 @@ export const createDefaultTaskPages = async (baseUrl, token, appId) => {
             },
             props: {
               ...baseWidgetConfig.props,
+              columns: taskColumns,
               data_source: {
                 name: "My Tasks",
                 slug: "myTasks",
@@ -1318,7 +1320,7 @@ export const createDefaultTaskPages = async (baseUrl, token, appId) => {
     {
       application_id: appId,
       display_name: "Over Due",
-      mode: "create",
+      mode: "view",
       name: "Over Due",
       show_header: true,
       type: "dashboard",
@@ -1332,6 +1334,7 @@ export const createDefaultTaskPages = async (baseUrl, token, appId) => {
             },
             props: {
               ...baseWidgetConfig.props,
+              columns: taskColumns,
               data_source: {
                 name: "My Tasks",
                 slug: "myTasks",
