@@ -70,7 +70,11 @@ const createSOWNavbarTemplate = (
         page.type === "custom" ||
         !page.type)
   );
-
+  const fitlerMytask = filteredPages.filter(
+    (page: any) =>
+      page.name?.toLowerCase().includes("my task") ||
+      page.display_name?.toLowerCase().includes("my task")
+  );
   const sidebarProps: SidebarProps[] = [];
   let currentRank = 2;
 
@@ -103,6 +107,26 @@ const createSOWNavbarTemplate = (
     (obj: any) =>
       obj.type === "task" && hasObjectPermission(rolePermissions, obj.slug)
   );
+
+  // Filter specific task pages by name
+  const myTasksPage = filteredPages.find(
+    (page: any) =>
+      page.name?.toLowerCase().includes("my tasks") ||
+      page.display_name?.toLowerCase().includes("my tasks")
+  );
+
+  const allTasksPage = filteredPages.find(
+    (page: any) =>
+      page.name?.toLowerCase().includes("all tasks") ||
+      page.display_name?.toLowerCase().includes("all tasks")
+  );
+
+  const overDuePage = filteredPages.find(
+    (page: any) =>
+      page.name?.toLowerCase().includes("Over Due") ||
+      page.display_name?.toLowerCase().includes("Over Due")
+  );
+
   const taskPages = filteredPages.filter(
     (page: any) =>
       //   page.type === "dashboard" ||
@@ -111,115 +135,123 @@ const createSOWNavbarTemplate = (
       page.workitem_type === "task"
   );
 
-  if (taskObjects.length > 0 || taskPages.length > 0) {
-    const taskItems = [
-      {
-        icon: {
-          svg: "user-check",
-          name: "assignment_ind",
-          type: "material-icons",
-          color: "#4caf50",
-          style: "solid",
-          imgurl: "https://static.amoga.io/fa/solid/user-check.svg",
-          version: 1,
-        },
-        rank: 1,
-        type: "Pages",
-        uuid: uuidv4(),
-        route: taskPages[0] ? `/${taskPages[0].page_id}` : "/my-tasks", // Always use page_id
-        app_id: appId,
-        children: [],
-        is_active: true,
-        is_custom: true,
-        meta_data: {},
-        view_type: "item",
-        is_default: false,
-        display_name: "My Tasks",
-        default_homepage_type: "",
-      },
-      {
-        icon: {
-          svg: "list-check",
-          name: "assignment",
-          type: "material-icons",
-          color: "#2196f3",
-          style: "solid",
-          imgurl: "https://static.amoga.io/fa/solid/list-check.svg",
-          version: 1,
-        },
-        rank: 2,
-        type: "Pages",
-        uuid: uuidv4(),
-        route: taskPages[1]
-          ? `/${taskPages[1].page_id}`
-          : taskPages[0]
-          ? `/${taskPages[0].page_id}`
-          : "/all-tasks", // Always use page_id
-        app_id: appId,
-        children: [],
-        is_active: true,
-        is_custom: true,
-        meta_data: {},
-        view_type: "item",
-        is_default: false,
-        display_name: "All Tasks",
-        default_homepage_type: "",
-      },
-      {
-        icon: {
-          svg: "clock",
-          name: "schedule",
-          type: "material-icons",
-          color: "#ff5722",
-          style: "solid",
-          imgurl: "https://static.amoga.io/fa/solid/clock.svg",
-          version: 1,
-        },
-        rank: 3,
-        type: "Pages",
-        uuid: uuidv4(),
-        route: taskPages[2]
-          ? `/${taskPages[2].page_id}`
-          : taskPages[0]
-          ? `/${taskPages[0].page_id}`
-          : "/overdue-tasks", // Always use page_id
-        app_id: appId,
-        children: [],
-        is_active: true,
-        is_custom: true,
-        meta_data: {},
-        view_type: "item",
-        is_default: false,
-        display_name: "Over Due",
-        default_homepage_type: "",
-      },
-    ];
-
-    sidebarProps.push({
+  //   if (taskObjects.length > 0 || taskPages.length > 0) {
+  const taskItems = [
+    {
       icon: {
-        svg: "tasks",
-        name: "assignment",
+        svg: "user-check",
+        name: "assignment_ind",
         type: "material-icons",
-        color: "#ff9800",
+        color: "#4caf50",
         style: "solid",
-        imgurl: "https://static.amoga.io/fa/solid/tasks.svg",
+        imgurl: "https://static.amoga.io/fa/solid/user-check.svg",
         version: 1,
       },
-      rank: currentRank++,
-      type: "",
+      rank: 1,
+      type: "Pages",
       uuid: uuidv4(),
-      route: "",
+      route: myTasksPage
+        ? `/${myTasksPage.page_id}`
+        : taskPages[0]
+        ? `/${taskPages[0].page_id}`
+        : "/my-tasks", // Use specific My Tasks page or fallback
       app_id: appId,
-      children: taskItems,
+      children: [],
       is_active: true,
       is_custom: true,
       meta_data: {},
-      view_type: "group",
+      view_type: "item",
       is_default: false,
-      display_name: "Tasks",
+      display_name: "My Tasks",
       default_homepage_type: "",
-    });
-  }
+    },
+    {
+      icon: {
+        svg: "list-check",
+        name: "assignment",
+        type: "material-icons",
+        color: "#2196f3",
+        style: "solid",
+        imgurl: "https://static.amoga.io/fa/solid/list-check.svg",
+        version: 1,
+      },
+      rank: 2,
+      type: "Pages",
+      uuid: uuidv4(),
+      route: allTasksPage
+        ? `/${allTasksPage.page_id}`
+        : taskPages[1]
+        ? `/${taskPages[1].page_id}`
+        : taskPages[0]
+        ? `/${taskPages[0].page_id}`
+        : "/all-tasks", // Use specific All Tasks page or fallback
+      app_id: appId,
+      children: [],
+      is_active: true,
+      is_custom: true,
+      meta_data: {},
+      view_type: "item",
+      is_default: false,
+      display_name: "All Tasks",
+      default_homepage_type: "",
+    },
+    {
+      icon: {
+        svg: "clock",
+        name: "schedule",
+        type: "material-icons",
+        color: "#ff5722",
+        style: "solid",
+        imgurl: "https://static.amoga.io/fa/solid/clock.svg",
+        version: 1,
+      },
+      rank: 3,
+      type: "Pages",
+      uuid: uuidv4(),
+      route: overDuePage
+        ? `/${overDuePage.page_id}`
+        : taskPages[2]
+        ? `/${taskPages[2].page_id}`
+        : taskPages[0]
+        ? `/${taskPages[0].page_id}`
+        : "/overdue-tasks", // Use specific Over Due page or fallback
+      app_id: appId,
+      children: [],
+      is_active: true,
+      is_custom: true,
+      meta_data: {},
+      view_type: "item",
+      is_default: false,
+      display_name: "Over Due",
+      default_homepage_type: "",
+    },
+  ];
+
+  sidebarProps.push({
+    icon: {
+      svg: "tasks",
+      name: "assignment",
+      type: "material-icons",
+      color: "#ff9800",
+      style: "solid",
+      imgurl: "https://static.amoga.io/fa/solid/tasks.svg",
+      version: 1,
+    },
+    rank: currentRank++,
+    type: "",
+    uuid: uuidv4(),
+    route: "",
+    app_id: appId,
+    children: taskItems,
+    is_active: true,
+    is_custom: true,
+    meta_data: {},
+    view_type: "group",
+    is_default: false,
+    display_name: "Tasks",
+    default_homepage_type: "",
+  });
+  //   }
 
   // 3. APP MODULES (workitem + object types) grouped by app name (Rank 3) - Only parent/top-level objects with permission
   const moduleObjects = objects.filter(
