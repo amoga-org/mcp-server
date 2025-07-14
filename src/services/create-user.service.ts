@@ -82,7 +82,7 @@ const generateUserName = (roleName: string): string => {
 const generateEmail = (appSlug: string, roleName: string): string => {
   const cleanRoleName = roleName.toLowerCase().replace(/\s+/g, "");
   const cleanAppSlug = appSlug.toLowerCase().replace(/[^a-zA-Z0-9]/g, "");
-  return `${cleanAppSlug}.${cleanRoleName}@amoga.app`;
+  return `${cleanAppSlug}.${cleanRoleName}@amoga.dev`;
 };
 
 /**
@@ -413,7 +413,7 @@ export const createUser = async (
     }
 
     if (createdUsers.length > 0) {
-      successMessage += `\n\nEach new user is configured with:\n• Status: TODO (ready for assignment)\n• Email: Generated as ${appSlug}.{rolename}@amoga.app\n• Job Title: Mapped from created job titles\n• Department: ${
+      successMessage += `\n\nEach new user is configured with:\n• Status: TODO (ready for assignment)\n• Email: Generated as ${appSlug}.{rolename}@amoga.dev\n• Job Title: Mapped from created job titles\n• Department: ${
         params.department || "Engineering"
       }\n• App Assignment: Linked to current application\n• Password: Set to email address (can be changed)\n\nUsers are automatically linked to their corresponding roles and job titles.`;
     }

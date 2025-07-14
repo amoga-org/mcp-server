@@ -442,7 +442,7 @@ export const TOOL_DESCRIPTIONS = {
     "- **Role-Based User Creation:** Creates one user per role (excluding administrator)\n" +
     "- **Automatic Job Title Mapping:** Links users to previously created job titles\n" +
     "- **Department Assignment:** Assigns users to specified departments\n" +
-    "- **Email Generation:** Creates emails as {app_slug}.{rolename}@amoga.app\n" +
+    "- **Email Generation:** Creates emails as {app_slug}.{rolename}@amoga.dev\n" +
     "- **Master Data Integration:** Fetches and uses job titles, departments, and assignments\n" +
     "- **Status Management:** Sets all users to 'todo' status for further configuration\n\n" +
     "**Process Flow:**\n" +
@@ -454,7 +454,7 @@ export const TOOL_DESCRIPTIONS = {
     "6. **API Integration:** Posts user data via object flow API\n\n" +
     "**Generated User Structure:**\n" +
     "- **Name:** Role-based or custom user name\n" +
-    "- **Email:** Auto-generated as {app_slug}.{rolename}@amoga.app\n" +
+    "- **Email:** Auto-generated as {app_slug}.{rolename}@amoga.dev\n" +
     "- **Status:** 'todo' (ready for assignment)\n" +
     "- **Job Title:** Mapped from created job titles in master data\n" +
     "- **Department:** Specified department (default: Engineering)\n" +

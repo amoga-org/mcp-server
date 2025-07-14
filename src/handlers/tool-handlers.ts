@@ -893,7 +893,7 @@ ${pagesText}
                 `  • Each user is linked to their corresponding role and job title\n` +
                 `  • Users are mapped to navbars via role associations\n` +
                 `  • All users are set to 'todo' status (ready for assignment)\n` +
-                `  • Email format: {app_slug}.{rolename}@amoga.app\n` +
+                `  • Email format: {app_slug}.{rolename}@amoga.dev\n` +
                 `  • Passwords are set to email address (changeable)\n\n` +
                 `📊 **Summary:** ${result.message}`,
             },
