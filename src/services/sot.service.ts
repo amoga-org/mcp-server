@@ -5,6 +5,7 @@
 import { SOTData } from "../types/sot.types.js";
 import { getAppContract } from "./app.service.js";
 import { GetAppContractParams, ObjectDefinition } from "../types/app.types.js";
+// import { generateWidgets } from "../utils/widgetGenerator.js";
 /**
  * Updates the app contract with new or updated SOT data.
  * Note: This function is for internal processing only.

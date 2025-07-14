@@ -253,9 +253,112 @@ export const createSotData = async (
         sot.widgets.map((el) => {
           let { configs, ...rest } = widgets[el.type || "button"];
           let { grid_props } = configs;
+
+          // Enhanced config for table widgets
+          let enhancedConfigs = { ...configs };
+
+          // For table widgets, add datastore and columns from contract objects
+          if (el.type === "table") {
+            const targetObject = contractObjects.find(
+              (obj) => obj.slug === sot.object_slug
+            );
+            if (targetObject) {
+              // Add datastore property
+              enhancedConfigs.props = {
+                ...enhancedConfigs.props,
+                data_source: {
+                  name: targetObject.name,
+                  slug: targetObject.slug,
+                },
+              };
+
+              // Add columns property from object attributes
+              if (
+                targetObject.attributes &&
+                Array.isArray(targetObject.attributes)
+              ) {
+                const tableColumns = targetObject.attributes.map(
+                  (attr, index) => ({
+                    key: attr.key,
+                    hide: false,
+                    pinned: index == 0 ? true : false,
+                    parent: "",
+                    masked: false,
+                    clickable: null,
+                  })
+                );
+                enhancedConfigs.props.columns = tableColumns;
+              }
+            }
+          }
+          if (el.type === "header") {
+            const targetObject = contractObjects.find(
+              (obj) => obj.slug === sot.object_slug
+            );
+            if (targetObject) {
+              // Add data_source array with object information
+              enhancedConfigs.props = {
+                ...enhancedConfigs.props,
+                data_source: [
+                  {
+                    name: targetObject.name,
+                    slug: targetObject.slug,
+                  },
+                ],
+              };
+              if (
+                targetObject.attributes &&
+                Array.isArray(targetObject.attributes)
+              ) {
+                const hardcodedAttributes = [
+                  {
+                    key: "created_at",
+                    hide: false,
+                    parentKey: targetObject.slug,
+                    parentDisplayName: targetObject.name,
+                    masked: false,
+                    pinned: false,
+                  },
+                  {
+                    key: "updated_at",
+                    hide: false,
+                    parentKey: targetObject.slug,
+                    parentDisplayName: targetObject.name,
+                    masked: false,
+                    pinned: false,
+                  },
+                  {
+                    key: "created_by",
+                    hide: false,
+                    parentKey: targetObject.slug,
+                    parentDisplayName: targetObject.name,
+                    masked: false,
+                    pinned: false,
+                  },
+                ];
+                const pinnedAttributes = ["status", "assignee"];
+                const headerAttributes = targetObject.attributes.map((attr) => {
+                  const isPinned = pinnedAttributes.includes(attr.key);
+                  return {
+                    key: attr.key,
+                    hide: !isPinned,
+                    pinned: isPinned,
+                    parentKey: targetObject.slug,
+                    parentDisplayName: targetObject.name,
+                    masked: false,
+                  };
+                });
+                enhancedConfigs.props.attributes = [
+                  ...headerAttributes,
+                  ...hardcodedAttributes,
+                ];
+              }
+            }
+          }
+
           updatedWidgets.push({
             configs: {
-              ...configs,
+              ...enhancedConfigs,
               grid_props: {
                 ...el.grid_props,
                 ...grid_props,

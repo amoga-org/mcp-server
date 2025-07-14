@@ -94,53 +94,101 @@ export const TOOL_DESCRIPTIONS = {
     "• navbar_and_roles - Navigation and role-based status changes\n" +
     "• dashboard - Dashboard-based status transitions\n\n" +
     "🖥️ PAGE ORIGINATION TYPE - SPECIAL HANDLING:\n" +
-    "When `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property. " +
-    "- `record`: All widgets applicable to the object type are allowed (e.g., header, iframe, comment, activity, jsonform, attachments, etc.), including `stats` and `table` if appropriate.\n" +
-    "- `dashboard`: Only `stats` and `table` widgets must be included. No other widgets are allowed.\n" +
-    "⚙️ Widget Auto-Generation Rules:\n" +
-    "- If object type is `workitem` or `task`, include:\n" +
-    "  • header, iframe, comment, activity\n" +
-    "- If object type is for display (e.g., `object`, `master`), include:\n" +
-    "  • header, table, filter, stats, jsonform\n" +
-    "- If collaboration is needed, include:\n" +
-    "  • comment, note, attachment, conversation\n" +
-    "- If automation or tracking is involved, include:\n" +
-    "  • automationLogs, eventLog, progressbar, taskIframe\n" +
-    "- For advanced or custom UI, optionally include:\n" +
-    "  • customComponent, container, richTextEditor, carousel, qrscanner, calendar, map, chart, json\n" +
+    "When `origination_type` is set to `page`, the AI must auto-generate a **UI page layout** for the target object. The layout should include a relevant set of widgets under the `widgets` property.\n\n" +
+    "🧩 Page Generation Logic Summary:\n" +
+    "Your system generates pages dynamically using a widget-based layout. Each widget has properties and is positioned based on page type and content.\n\n" +
+    "📄 1. Page Types:\n" +
+    "✅ Common Properties for All Pages:\n" +
+    "- Widgets like: Header, Comments, Activities, Notes, etc.\n" +
+    "- Layout is defined using {x, y, w, h} structure (e.g. {x: 0, y: 0, w: 8, h: 9})\n" +
+    "- Header always contains: status, assigned, created-by, date-created, date-updated, masters/segments, and other key attributes\n\n" +
+    "🗂️ 2. CaseIndex Page (Index View for Case):\n" +
+    "- Shown Fields: title, assignee, status, due-date, masters/segments, date-created, last-update\n" +
+    "- Layout: Full-width table widget with grid_props: {x: 0, y: 0, w: 12, h: 43}\n\n" +
+    "📋 3. Case Record Page / Composite Case-Task Page:\n" +
+    "⚙️ Dynamic Logic:\n" +
+    "- If number of statuses > 5 → Show top full-width path widget (breadcrumb/status path)\n" +
+    "- Else → Show path widget below header\n\n" +
+    "🧱 Layout Widgets:\n" +
+    "- Top-Left {x: 0, y: 0, w: 8, h: 9}: Header with important case properties\n" +
+    "- Top-Right {x: 8, y: 0, w: 4, h: 23}: Comments widget\n" +
+    "- Mid-Left {x: 0, y: 9, w: 8, h: 16}: Task iFrame (optional, dynamic)\n" +
+    "- Bottom-Right {x: 8, y: 23, w: 4, h: 22}: Activities widget\n" +
+    "- Bottom-Left {x: 0, y: 25, w: 8, h: 20}: Multi-tab widget with following tab order:\n" +
+    "  • Conversation Widget (if omnichannel is important)\n" +
+    "  • Tasks (table widget for related tasks)\n" +
+    "  • Child Objects (not tasks - table widget)\n" +
+    "  • Details Form (iframe widget)\n\n" +
+    "🧾 4. Object or Master Record Page:\n" +
+    "- Fields Similar to Case: title, business-segments/masters, date-created, last-update\n" +
+    "- Real Layout Example (Object/Master Record):\n" +
+    "  • Header {w: 8, h: 15, x: 0, y: 0} - Contains object attributes with proper minH: 6, minW: 6\n" +
+    "  • Notes {w: 4, h: 15, x: 8, y: 0} - Note widget for collaboration\n" +
+    "  • Tabs {w: 8, h: 42, x: 0, y: 15} - Child objects tables (Staff, Room Type, etc.)\n" +
+    "  • Activity {w: 4, h: 42, x: 8, y: 15} - Activity tracking widget\n\n" +
+    "🎯 AI Parameter Guidelines:\n" +
+    "- When creating SOT with origination_type='page', the AI must detect object type from contract\n" +
+    "- For `object` and `master` types: Generate Object Record layout (header, note, tabs, activity)\n" +
+    "- For `workitem` and `task` types: Generate Case Record layout (header, comment, taskIframe, activity, tabs)\n" +
+    "- Page type ('record' vs 'dashboard') determines widget combination and layout pattern\n" +
+    "- Grid coordinates must prevent overlap and follow real-world tested layouts\n\n" +
+    "✅ 5. Task Record Page Logic:\n" +
+    "- Case A: Task with Approve/Reject/Send-Back\n" +
+    "  • Top row: Minimal info\n" +
+    "  • Bottom row buttons: Reject (Red), Send Back (Yellow), Approve (Green)\n" +
+    "- Case B: Task with ≤ 6 Info Elements\n" +
+    "  • 2 rows (max 3 columns per row)\n" +
+    "  • 3rd row: Cancel + Submit\n" +
+    "- Case C: Task with > 6 Info Elements\n" +
+    "  • Multiple rows (2 columns per row)\n" +
+    "  • Bottom: Cancel + Submit buttons\n\n" +
     "🧩 Grid Layout Auto-Generation:\n" +
     "Each widget must include a `grid_props` object for layout control. The AI must auto-generate these dynamically based on widget type and available space.\n" +
     "- Default layout values:\n" +
     "  • w: width (max 12)\n" +
     "  • h: height (calculated based on widget type — 1 grid unit = 14px, so total height in px ÷ 14 = h)\n" +
     "  • x, y: position on grid (auto-calculated to prevent overlap)\n" +
+    "  • maxH: 72, maxW: 12, minH: varies by widget, minW: varies by widget\n" +
     "  • isResizable: true\n" +
     "  • static: false\n" +
-    "🖼️ Page Layout Previews (for origination_type = page):\n" +
-    "- WorkItem dashboard Page:\n" +
-    "  ┌───────────────────────────────┐\n" +
-    "  │   [ Stat Widget 1 ]           │\n" +
-    "  │   [ Stat Widget 2 ]           │\n" +
-    "  │   [ Stat Widget 3 ]           │\n" +
-    "  │                               │\n" +
-    "  │   [ Table - Assigned Items ]  │\n" +
-    "  └───────────────────────────────┘\n" +
-    "- WorkItem / Task / Object Record Page:\n" +
-    "  ┌───────────────────────────────┐\n" +
-    "  │       [ Header Widget ]       │\n" +
-    "  │     [ iframe Widget ]        │\n" +
-    "  │ [ Comment ]    [ Activity ]   │\n" +
-    "  └───────────────────────────────┘\n" +
-    "- Task / Object dashboard Page:\n" +
-    "  ┌───────────────────────────────┐\n" +
-    "  │       [ Table Widget ]        │\n" +
-    "  └───────────────────────────────┘\n" +
-    "- Object with Full Display Needs:\n" +
-    "  ┌───────────────────────────────┐\n" +
-    "  │  [ Stats ]   [ Filters ]       │\n" +
-    "  │        [ Table Widget ]        │\n" +
-    "  │        [ JSON Form ]           │\n" +
-    "  └───────────────────────────────┘\n",
+    "  • moved: false\n\n" +
+    "📊 Widget Types and Grid Configuration Examples:\n" +
+    "- header: {w: 8, h: 15, minH: 6, minW: 6} (Object/Master), {w: 8, h: 9, minH: 2, minW: 3} (Workitem/Task)\n" +
+    "- note: {w: 4, h: 15, minH: 10, minW: 3} (for Object/Master collaboration)\n" +
+    "- comment: {w: 4, h: 23, minH: 15, minW: 3} (for Workitem/Task collaboration)\n" +
+    "- activity: {w: 4, h: 42, minH: 10, minW: 3} (Object/Master), {w: 4, h: 22, minH: 10, minW: 3} (Workitem/Task)\n" +
+    "- taskIframe: {w: 8, h: 16, minH: 4, minW: 2} (only for Workitem/Task types)\n" +
+    "- tabs: {w: 8, h: 42, minH: 10, minW: 3} (Object/Master), {w: 8, h: 20, minH: 10, minW: 3} (Workitem/Task)\n" +
+    "- table (index): {w: 12, h: 43, minH: 25, minW: 6}\n" +
+    "- stats: {w: 4, h: 3, minH: 2, minW: 2}\n\n" +
+    "⚙️ Widget Auto-Generation Rules by Object Type:\n" +
+    "- `workitem` (record page): header {w:8,h:9}, comment {w:4,h:23}, taskIframe {w:8,h:16}, activity {w:4,h:22}, tabs {w:8,h:20}\n" +
+    "- `task` (record page): Use task-specific layouts with approve/reject buttons or form elements\n" +
+    "- `object`/`master` (record page): header {w:8,h:15}, note {w:4,h:15}, tabs {w:8,h:42}, activity {w:4,h:42}\n" +
+    "- `workitem`/`task` (dashboard page): stats widgets (3 across), table widget {w:12,h:35+}\n" +
+    "- `object`/`master`/`segment` (dashboard page): table widget {w:12,h:43} (full width)\n" +
+    "- All record pages: Include collaboration widgets (comment/note, activity)\n" +
+    "- All dashboard pages: Focus on data display (stats, tables)\n\n" +
+    "🔍 Object Type Detection Logic:\n" +
+    "- AI must read object_slug from SOT data and match against app contract objects\n" +
+    "- Contract object.type determines which widget layout to generate\n" +
+    "- Page type (record/dashboard) from origination.type determines overall structure\n" +
+    "- Widget positioning coordinates must prevent overlap using tested real-world layouts\n\n" +
+    "🖼️ Implementation Notes:\n" +
+    "- All widgets include comprehensive configs with icon, color, props, and grid_props\n" +
+    "- Widget slugs are auto-generated using UUID for uniqueness\n" +
+    "- Tab widgets contain multiple child widgets with their own configurations\n" +
+    "- Layout coordinates prevent overlap and ensure responsive design\n" +
+    "- Page type determines the specific widget combination and layout pattern\n\n" +
+    "🚀 AI Integration Instructions:\n" +
+    "- When processing SOT creation with origination_type='page':\n" +
+    "  1. Extract object_slug from SOT data\n" +
+    "  2. Look up object in app contract to get object.type (workitem, task, object, master, segment)\n" +
+    "  3. Use origination.type to determine page type (record/dashboard)\n" +
+    "  4. Call generateWidgets(objectType, pageType) to create appropriate layout\n" +
+    "  5. Widgets are automatically attached to SOT and included in API payload\n" +
+    "- Widget generation happens automatically in sot.service.ts when SOT origination_type='page'\n" +
+    "- No manual widget specification needed - system auto-generates based on object type\n\n",
 
   DELETE_OBJECT: "Delete an object from the application contract",
 
