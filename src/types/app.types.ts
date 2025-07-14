@@ -321,6 +321,7 @@ export const CreateSotSchema = z.object({
               z.object({
                 type: z
                   .enum([
+                    "note",
                     "activity",
                     "attachment",
                     "button",

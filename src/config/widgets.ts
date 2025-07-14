@@ -1,4 +1,38 @@
 import { v4 as uuidv4 } from "uuid";
+const note = {
+  configs: {
+    color: "#FFA500",
+    description: "note description",
+    display_name: "notes",
+    dynamically_binded: [],
+    grid_props: {
+      minW: 3,
+      maxW: 8,
+      minH: 10,
+      maxH: 72,
+    },
+    props: {
+      title: "Notes",
+      refresh: false,
+      sort_by: "newest",
+      styles: {},
+      updated: true,
+      added_by: true,
+      show_sort: true,
+      show_search: true,
+      hidden: false,
+      disable: false,
+      show_widget_title: false,
+      allow_navigation: true,
+      widget_border_disabled: false,
+    },
+    is_refresh: false,
+    type: "note",
+  },
+  is_default: true,
+  is_active: true,
+  widget_version: 1.0,
+};
 const activity = {
   configs: {
     grid_props: {
@@ -1399,6 +1433,7 @@ const ticker = {
 // Export all widgets
 export const widgets = {
   activity,
+  note,
   attachment,
   button,
   calendar,
