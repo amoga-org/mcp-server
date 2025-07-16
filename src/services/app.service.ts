@@ -755,12 +755,14 @@ export async function publishApp(params: PublishAppParams): Promise<{
   const contract = await getAppContract({ baseUrl, tenantName, appId });
 
   const { token } = await getCrmToken(baseUrl, tenantName);
-  let apiEndpoint = "/api/v1/core/studio/app/publish/";
-  if (tenantName == "qa") {
-    apiEndpoint = "/api/v2/app/publish/";
+  let apiEndpoint = '';
+  if (tenantName === "qa") {
+    apiEndpoint = `${baseUrl}/api/v2/app/publish/${appId}`;
+  } else {
+    apiEndpoint = `${baseUrl}/api/v1/core/studio/app/publish/${appId}`;
   }
   try {
-    const response = await fetch(`${baseUrl}${apiEndpoint}${appId}`, {
+    const response = await fetch(apiEndpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
