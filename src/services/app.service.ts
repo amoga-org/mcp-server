@@ -755,19 +755,19 @@ export async function publishApp(params: PublishAppParams): Promise<{
   const contract = await getAppContract({ baseUrl, tenantName, appId });
 
   const { token } = await getCrmToken(baseUrl, tenantName);
+  let apiEndpoint = "/api/v1/core/studio/app/publish/";
+  if (tenantName == "qa") {
+    apiEndpoint = "/api/v2/app/publish/";
+  }
   try {
-    const response = await fetch(
-      `${baseUrl}/api/v1/core/studio/app/publish/${appId}`,
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ version: contract.version }),
-      }
-    );
-
+    const response = await fetch(`${baseUrl}${apiEndpoint}${appId}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ version: contract.version }),
+    });
     if (!response.ok) {
       let errorMessage = `Failed to publish application: ${response.status} ${response.statusText}`;
 
