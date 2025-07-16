@@ -122,7 +122,124 @@ export const getCrmToken = async (baseUrl, tenantName) => {
     throw error;
   }
 };
-
+// Function to fetch all pages for an app
+export const getAllPages = async (baseUrl, token, appId) => {
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/v1/core/studio/app/pages=${appId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch pages: ${response.statusText}`);
+    }
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Error fetching pages:", error);
+    throw error;
+  }
+};
+// Function to update table widget config
+export const updateTableWidget = async (
+  baseUrl,
+  token,
+  pageId,
+  widgetId,
+  widgetConfig
+) => {
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/v1/core/page/${pageId}/widget`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        body: { page_widget: JSON.stringify(widgetConfig) },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to update widget: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error updating widget:", error);
+    throw error;
+  }
+};
+// Function to update task dashboard pages with all object slugs/names
+export const updateTaskDashboardPages = async (
+  baseUrl,
+  appId,
+  contractObjects,
+  tenantName
+) => {
+  try {
+    const { token } = await getCrmToken(baseUrl, tenantName);
+    const allPages = await getAllPages(baseUrl, token, appId);
+    const taskDashboardPages = allPages.filter(
+      (page) =>
+        ["My Tasks", "All Tasks", "Over Due"].includes(page.display_name) &&
+        page.type === "dashboard"
+    );
+    if (taskDashboardPages.length === 0) {
+      return;
+    }
+    const myTasksObjects = contractObjects.map((obj) => ({
+      slug: obj.slug,
+      name: obj.name,
+    }));
+    // Update each task dashboard page
+    for (const page of taskDashboardPages) {
+      // Fetch current page widgets
+      const pageResponse = await fetch(
+        `${baseUrl}api/v1/core/page?id=${page.id}&edit=true`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+        }
+      );
+      if (!pageResponse.ok) {
+        console.error(`Failed to fetch widgets for page ${page.id}`);
+        continue;
+      }
+      const pageWidgets = await pageResponse.json();
+      const widgets = pageWidgets.data.data.widgets || [];
+      // Find table widgets and update their myTasksObjects
+      for (const widget of widgets) {
+        if (
+          (widget.configs.type === "table" ||
+            widget.configs.type === "table2") &&
+          widget.configs?.props
+        ) {
+          const updatedWidgetConfig = {
+            ...widget.configs,
+            props: {
+              ...widget.configs.props,
+              myTasksObjects: myTasksObjects,
+            },
+          };
+          await updateTableWidget(baseUrl, token, page.id, widget.id, {
+            configs: updatedWidgetConfig,
+            // type: widget.type,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    throw error;
+  }
+};
 async function getAttributes(baseUrl, token) {
   const url = `${baseUrl}/api/v1/core/studio/loco/attributes`;
 
@@ -190,7 +307,6 @@ export const getAllApps = async (baseUrl, tenantName) => {
   const data = await response.json();
   return data.data || []; // return list of apps
 };
-
 export const deleteAppPayload = async (tenantName, baseUrl, appId) => {
   const { token } = await getCrmToken(baseUrl, tenantName);
   const response = await fetch(
@@ -203,15 +319,12 @@ export const deleteAppPayload = async (tenantName, baseUrl, appId) => {
       },
     }
   );
-
   if (!response.ok) {
     throw new Error(`Failed to delete app: ${response.statusText}`);
   }
-
   const data = await response.json();
   return data.data;
 };
-
 export const getAppContract = async (baseUrl, tenantName, appId) => {
   const { token } = await getCrmToken(baseUrl, tenantName);
   const response = await fetch(
@@ -224,15 +337,12 @@ export const getAppContract = async (baseUrl, tenantName, appId) => {
       },
     }
   );
-
   if (!response.ok) {
     throw new Error(`Failed to fetch app contract: ${response.statusText}`);
   }
-
   const data = await response.json();
   return data.data;
 };
-
 export const createSotData = async (
   baseUrl,
   tenantName,
@@ -244,7 +354,6 @@ export const createSotData = async (
   // Validate that all object_slugs in sotData exist in the contract
   const contractObjects = contractJson?.contract_json?.objects || [];
   const validObjectSlugs = new Set(contractObjects.map((obj) => obj.slug));
-
   let pageDetails = [];
   for (const sot of sotData) {
     if (sot.origination_type == "page") {
@@ -253,10 +362,8 @@ export const createSotData = async (
         sot.widgets.map((el) => {
           let { configs, ...rest } = widgets[el.type || "button"];
           let { grid_props } = configs;
-
           // Enhanced config for table widgets
           let enhancedConfigs = { ...configs };
-
           // For table widgets, add datastore and columns from contract objects
           if (el.type === "table") {
             const targetObject = contractObjects.find(
@@ -271,7 +378,6 @@ export const createSotData = async (
                   slug: targetObject.slug,
                 },
               };
-
               // Add columns property from object attributes
               if (
                 targetObject.attributes &&
@@ -355,7 +461,6 @@ export const createSotData = async (
               }
             }
           }
-
           updatedWidgets.push({
             configs: {
               ...enhancedConfigs,
@@ -385,11 +490,9 @@ export const createSotData = async (
   pageDetails.map(async (el) => {
     await handleUsePageTemplate(baseUrl, token, el);
   });
-
   // Get existing modeling_data or initialize empty
   const existingModelingData = contractJson.modeling_data || {};
   const existingSots = existingModelingData.data || [];
-
   // Add new SOTs with UUIDs while preserving existing ones
   const newSots = sotData.map((sot) => {
     const newSot = { ...sot, id: uuidv4() };
@@ -398,17 +501,14 @@ export const createSotData = async (
     }
     return newSot;
   });
-
   // Combine existing and new SOTs
   const updatedSots = [...existingSots, ...newSots];
-
   // Prepare the updated contract with modeling_data
   const updatedContract = {
     modeling_data: {
       data: updatedSots,
     },
   };
-
   // Update the contract with new SOT data
   const response = await fetch(
     `${baseUrl}/api/v1/core/studio/contract/app_meta/${appId}`,
@@ -423,15 +523,12 @@ export const createSotData = async (
       }),
     }
   );
-
   if (!response.ok) {
     throw new Error(`Failed to update SOT data: ${response.statusText}`);
   }
-
   const data = await response.json();
   return data.data;
 };
-
 export const createAppContract = async (
   baseUrl,
   tenantName,
@@ -442,25 +539,20 @@ export const createAppContract = async (
   appName
 ) => {
   const { token } = await getCrmToken(baseUrl, tenantName);
-
   // First get all available attributes
   const allAvailableAttributes = await getAttributes(baseUrl, token);
-
   // Get existing contract to check for existing objects
   const existingContract = await getAppContract(baseUrl, tenantName, appId);
   const existingObjects = existingContract?.contract_json?.objects || [];
   const existingObjectsBySlug = new Map(
     existingObjects.map((obj) => [obj.slug, obj])
   );
-
   // Add validation function for relationships
   const validateRelationships = (objects) => {
     // Track task-workitem relationships to enforce one-to-one constraint
     const taskRelationships = new Map();
-
     objects.forEach((obj) => {
       if (!obj.relationship || obj.relationship.length === 0) return;
-
       switch (obj.type) {
         case "workitem":
           obj.relationship = obj.relationship.filter((rel) => {
@@ -471,7 +563,6 @@ export const createAppContract = async (
             );
           });
           break;
-
         case "task":
           // Only allow one relationship with workitem
           const workitemRels = obj.relationship.filter((rel) => {
@@ -481,20 +572,16 @@ export const createAppContract = async (
               rel.relationship_type === "manyToOne"
             );
           });
-
           // Take only the first workitem relationship if multiple exist
           obj.relationship = workitemRels.slice(0, 1);
-
           // Track this relationship
           if (obj.relationship.length > 0) {
             taskRelationships.set(obj.name, obj.relationship[0].name);
           }
           break;
-
         case "master":
           const masterObjects = objects.filter((o) => o.type === "master");
           const hasTwoMasterObjects = masterObjects.length >= 2;
-
           if (hasTwoMasterObjects) {
             obj.relationship = obj.relationship.filter((rel) => {
               const targetObj = objects.find((o) => o.name === rel.name);

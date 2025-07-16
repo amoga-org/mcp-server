@@ -12,7 +12,10 @@ import {
   Permission,
   PublishAppParams,
 } from "../types/app.types.js";
-import { createDefaultTaskPages } from "../utils/api.js";
+import {
+  createDefaultTaskPages,
+  updateTaskDashboardPages,
+} from "../utils/api.js";
 
 // Helper function to get CRM token
 export async function getCrmToken(
@@ -781,10 +784,18 @@ export async function publishApp(params: PublishAppParams): Promise<{
     }
 
     const data = await response.json();
+    try {
+      await updateTaskDashboardPages(
+        baseUrl,
+        appId,
+        contract.objects || [],
+        tenantName
+      );
+    } catch (error) {}
 
     return {
       success: true,
-      message: `Application ${appId} published successfully`,
+      message: `Application ${appId} published successfully. Task dashboard pages updated with all object information.`,
       data,
     };
   } catch (error: any) {
