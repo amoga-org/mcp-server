@@ -75,6 +75,12 @@ const createSOWNavbarTemplate = (
       page.name?.toLowerCase().includes("my task") ||
       page.display_name?.toLowerCase().includes("my task")
   );
+  const mydashboard = filteredPages.find(
+    (page: any) =>
+      page.name?.toLowerCase().includes("dashboard") ||
+      page.display_name?.toLowerCase().includes("dashboard")
+  );
+
   const sidebarProps: SidebarProps[] = [];
   let currentRank = 2;
 
@@ -95,7 +101,7 @@ const createSOWNavbarTemplate = (
     is_active: true,
     children: [],
     meta_data: {},
-    route: "/dashboard",
+    route: mydashboard ? `/${mydashboard.page_id}` : "/dashboard",
     is_default: false,
     is_custom: true,
     default_homepage_type: "",
@@ -123,8 +129,8 @@ const createSOWNavbarTemplate = (
 
   const overDuePage = filteredPages.find(
     (page: any) =>
-      page.name?.toLowerCase().includes("Over Due") ||
-      page.display_name?.toLowerCase().includes("Over Due")
+      page.name?.toLowerCase().includes("over due") ||
+      page.display_name?.toLowerCase().includes("over due")
   );
 
   const taskPages = filteredPages.filter(
