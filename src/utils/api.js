@@ -1463,6 +1463,7 @@ export const createDefaultTaskPages = async (baseUrl, token, appId) => {
       mode: "view",
       name: "Dashboard",
       show_header: true,
+      type: "dashboard",
       widgets: [
         {
           configs: {
