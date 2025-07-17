@@ -126,7 +126,7 @@ export const getCrmToken = async (baseUrl, tenantName) => {
 export const getAllPages = async (baseUrl, token, appId) => {
   try {
     const response = await fetch(
-      `${baseUrl}/api/v1/core/studio/app/pages=${appId}`,
+      `${baseUrl}/api/v1/core/studio/app/pages/${appId}`,
       {
         method: "GET",
         headers: {
@@ -200,7 +200,7 @@ export const updateTaskDashboardPages = async (
     for (const page of taskDashboardPages) {
       // Fetch current page widgets
       const pageResponse = await fetch(
-        `${baseUrl}api/v1/core/page?id=${page.id}&edit=true`,
+        `${baseUrl}/api/v1/core/page?id=${page.id}&edit=true`,
         {
           method: "GET",
           headers: {
@@ -214,7 +214,7 @@ export const updateTaskDashboardPages = async (
         continue;
       }
       const pageWidgets = await pageResponse.json();
-      const widgets = pageWidgets.data.data.widgets || [];
+      const widgets = pageWidgets.data.widgets || [];
       // Find table widgets and update their myTasksObjects
       for (const widget of widgets) {
         if (
