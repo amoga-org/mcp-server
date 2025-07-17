@@ -371,7 +371,7 @@ export const createDummyDataHandler = {
         message: `Successfully inserted ${successCount} out of ${recordsToCreate.length} records for ${params.objectSlug}`,
         results,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         return {
           success: false,

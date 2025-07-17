@@ -181,7 +181,7 @@ export const createJobTitle = async (
 
         // Find corresponding navbar for this role
         const navbar = managementData.navbar.find((nav: any) =>
-          nav.label?.toLowerCase().includes(appName.toLowerCase())
+          nav.label?.toLowerCase().includes(roleName.toLowerCase())
         );
 
         // Prepare job title data

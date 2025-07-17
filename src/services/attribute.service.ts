@@ -9,7 +9,7 @@ const handleError = (error: unknown): never => {
     apiError.status = error.response?.status;
     throw apiError;
   }
-  throw error;
+  throw error instanceof Error ? error : new Error(String(error));
 };
 
 const createClient = (baseUrl: string, token: string) => {
