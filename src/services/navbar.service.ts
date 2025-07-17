@@ -97,7 +97,7 @@ const createSOWNavbarTemplate = (
       color: "#5f6368",
       imgurl: "https://static.amoga.io/fa/light/chart-line.svg",
     },
-    type: "page",
+    type: "Pages",
     is_active: true,
     children: [],
     meta_data: {},
