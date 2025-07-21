@@ -529,6 +529,50 @@ export const createSotData = async (
   const data = await response.json();
   return data.data;
 };
+
+// Helper function to merge relationships between existing and new objects
+const mergeObjectRelationships = (
+  existingObjects,
+  newObjects,
+  relationshipMap,
+  appId
+) => {
+  // Create a map for quick lookup of all objects
+  const allObjectsMap = new Map();
+
+  // Add existing objects to map
+  existingObjects.forEach((obj) => {
+    allObjectsMap.set(obj.slug, obj);
+  });
+
+  // Add new objects to map (they override existing if same slug)
+  newObjects.forEach((obj) => {
+    allObjectsMap.set(obj.slug, obj);
+  });
+
+  // Apply reverse relationships from relationshipMap
+  relationshipMap.forEach((relInfo, key) => {
+    const targetObject = allObjectsMap.get(relInfo.targetSlug);
+    if (targetObject) {
+      // Check for duplicate relationships
+      const existingRelIndex = targetObject.relationship.findIndex(
+        (r) =>
+          r.destination_object_slug ===
+            relInfo.relationship.destination_object_slug &&
+          r.relation_type === relInfo.relationship.relation_type
+      );
+
+      if (existingRelIndex === -1) {
+        targetObject.relationship.push(relInfo.relationship);
+      } else {
+        targetObject.relationship[existingRelIndex] = relInfo.relationship;
+      }
+    }
+  });
+  const finalObjects = Array.from(allObjectsMap.values());
+  return finalObjects;
+};
+
 export const createAppContract = async (
   baseUrl,
   tenantName,
@@ -548,29 +592,38 @@ export const createAppContract = async (
     existingObjects.map((obj) => [obj.slug, obj])
   );
   // Add validation function for relationships
-  const validateRelationships = (objects) => {
+  const validateRelationships = (objects, existingObjects) => {
+    // Create a combined list for target object lookup
+    const allObjects = [...objects, ...existingObjects];
+
     // Track task-workitem relationships to enforce one-to-one constraint
     const taskRelationships = new Map();
+
     objects.forEach((obj) => {
       if (!obj.relationship || obj.relationship.length === 0) return;
       switch (obj.type) {
         case "workitem":
           obj.relationship = obj.relationship.filter((rel) => {
-            const targetObj = objects.find((o) => o.name === rel.name);
-            return (
-              targetObj?.type === "task" &&
-              rel.relationship_type === "oneToMany"
+            const targetObj = allObjects.find(
+              (o) => o.name.toLowerCase() === rel.name.toLowerCase()
             );
+            const isValid =
+              targetObj?.type === "task" &&
+              rel.relationship_type === "oneToMany";
+
+            return isValid;
           });
           break;
         case "task":
           // Only allow one relationship with workitem
           const workitemRels = obj.relationship.filter((rel) => {
-            const targetObj = objects.find((o) => o.name === rel.name);
-            return (
-              targetObj?.type === "workitem" &&
-              rel.relationship_type === "manyToOne"
+            const targetObj = allObjects.find(
+              (o) => o.name.toLowerCase() === rel.name.toLowerCase()
             );
+            const isValid =
+              targetObj?.type === "workitem" &&
+              rel.relationship_type === "manyToOne";
+            return isValid;
           });
           // Take only the first workitem relationship if multiple exist
           obj.relationship = workitemRels.slice(0, 1);
@@ -580,11 +633,13 @@ export const createAppContract = async (
           }
           break;
         case "master":
-          const masterObjects = objects.filter((o) => o.type === "master");
+          const masterObjects = allObjects.filter((o) => o.type === "master");
           const hasTwoMasterObjects = masterObjects.length >= 2;
           if (hasTwoMasterObjects) {
             obj.relationship = obj.relationship.filter((rel) => {
-              const targetObj = objects.find((o) => o.name === rel.name);
+              const targetObj = allObjects.find(
+                (o) => o.name.toLowerCase() === rel.name.toLowerCase()
+              );
               return (
                 targetObj?.type === "master" &&
                 (rel.relationship_type === "oneToMany" ||
@@ -606,7 +661,7 @@ export const createAppContract = async (
 
   // Validate relationships before processing
   const { objects: validatedObjects, taskRelationships } =
-    validateRelationships(objects);
+    validateRelationships(objects, existingObjects);
   objects = validatedObjects;
 
   // 2. Generate slugs for the objects that don't exist
@@ -799,17 +854,27 @@ export const createAppContract = async (
     // Add parent key for task objects that have a workitem relationship
     if (objectDef.type === "task" && taskRelationships.has(objectDef.name)) {
       const workitemName = taskRelationships.get(objectDef.name);
-      const workitemObj = objects.find((obj) => obj.name === workitemName);
-      if (workitemObj) {
-        const workitemSlugInfo =
-          existingObjects.find(
-            (obj) => obj.name.toLowerCase() === workitemName.toLowerCase()
-          )?.slug ||
-          slugList.find((s) => s.slug === workitemName)?.generated_slug;
+      let workitemSlugInfo = null;
 
-        if (workitemSlugInfo) {
-          updatedObject.parent = workitemSlugInfo;
+      // First check if workitem is in current objects being created
+      const workitemObj = objects.find(
+        (obj) => obj.name.toLowerCase() === workitemName.toLowerCase()
+      );
+      if (workitemObj) {
+        workitemSlugInfo = slugList.find(
+          (s) => s.slug === workitemName
+        )?.generated_slug;
+      } else {
+        // Check existing objects
+        const existingWorkitemObj = existingObjects.find(
+          (obj) => obj.name.toLowerCase() === workitemName.toLowerCase()
+        );
+        if (existingWorkitemObj) {
+          workitemSlugInfo = existingWorkitemObj.slug;
         }
+      }
+      if (workitemSlugInfo) {
+        updatedObject.parent = workitemSlugInfo;
       }
     }
 
@@ -843,9 +908,29 @@ export const createAppContract = async (
       const relationships = [];
 
       objectDef.relationship.forEach((rel) => {
-        const destinationObjDef = objects.find((obj) => obj.name === rel.name);
-        if (!destinationObjDef) return;
+        // First check if destination object is in the current objects array
+        let destinationObjDef = objects.find((obj) => obj.name === rel.name);
+        let destinationSlug = null;
+        let isExistingObject = false;
 
+        // If not found in current objects, check existing objects in contract
+        if (!destinationObjDef) {
+          const existingDestinationObj = existingObjects.find(
+            (obj) => obj.name.toLowerCase() === rel.name.toLowerCase()
+          );
+
+          if (existingDestinationObj) {
+            destinationObjDef = {
+              name: existingDestinationObj.name,
+              type: existingDestinationObj.type,
+              slug: existingDestinationObj.slug,
+            };
+            destinationSlug = existingDestinationObj.slug;
+            isExistingObject = true;
+          } else {
+            return;
+          }
+        }
         // Additional validation during relationship creation
         if (
           objectDef.type === "workitem" &&
@@ -859,9 +944,16 @@ export const createAppContract = async (
           // Only allow one relationship with workitem
           if (
             destinationObjDef.type !== "workitem" ||
-            rel.relationship_type !== "manyToOne" ||
-            relationships.length > 0
+            rel.relationship_type !== "manyToOne"
           ) {
+            return;
+          }
+
+          // Check if we already have a workitem relationship for this task
+          const existingWorkitemRel = relationships.find(
+            (r) => r.relation_type === "manyToOne"
+          );
+          if (existingWorkitemRel) {
             return;
           }
         }
@@ -873,12 +965,15 @@ export const createAppContract = async (
           }
         }
 
-        const destinationSlug =
-          existingObjects.find(
-            (obj) => obj.name.toLowerCase() === rel.name.toLowerCase()
-          )?.slug ||
-          slugList.find((s) => s.slug === rel.name)?.generated_slug ||
-          formatLocoName(rel.name);
+        // Get destination slug (either from new objects or existing objects)
+        if (!destinationSlug) {
+          destinationSlug =
+            existingObjects.find(
+              (obj) => obj.name.toLowerCase() === rel.name.toLowerCase()
+            )?.slug ||
+            slugList.find((s) => s.slug === rel.name)?.generated_slug ||
+            formatLocoName(rel.name);
+        }
 
         const sourceObj = {
           name: objectDef.name,
@@ -903,7 +998,6 @@ export const createAppContract = async (
             );
 
           relationships.push(forwardRelationship);
-
           const key = `${destinationObj.slug}:${sourceObj.slug}`;
           relationshipMap.set(key, {
             relationship: reverseRelationship,
@@ -921,7 +1015,28 @@ export const createAppContract = async (
         }
       });
 
-      updatedObject.relationship = relationships;
+      // Merge relationships for existing objects
+      if (existingObject && existingObject.relationship) {
+        // Preserve existing relationships that aren't being updated
+        const newRelationshipTargets = new Set(
+          relationships.map((r) => r.destination_object_slug)
+        );
+
+        const preservedRelationships = existingObject.relationship.filter(
+          (existingRel) =>
+            !newRelationshipTargets.has(existingRel.destination_object_slug)
+        );
+
+        updatedObject.relationship = [
+          ...preservedRelationships,
+          ...relationships,
+        ];
+      } else {
+        updatedObject.relationship = relationships;
+      }
+    } else if (existingObject && existingObject.relationship) {
+      // Preserve existing relationships if no new relationships are defined
+      updatedObject.relationship = existingObject.relationship;
     }
 
     // Add or update form data
@@ -959,20 +1074,15 @@ export const createAppContract = async (
     }
   }
 
-  // Update relationships for all objects
-  updatedObjects.forEach((obj) => {
-    relationshipMap.forEach((relInfo, key) => {
-      if (obj.slug === relInfo.targetSlug) {
-        const existingRelationship = obj.relationship.find(
-          (r) => r.id === relInfo.relationship.id
-        );
-
-        if (!existingRelationship) {
-          obj.relationship.push(relInfo.relationship);
-        }
-      }
-    });
-  });
+  // Apply bidirectional relationships using the helper function
+  const finalObjects = mergeObjectRelationships(
+    existingObjects,
+    updatedObjects.filter(
+      (obj) => !existingObjects.some((existing) => existing.slug === obj.slug)
+    ),
+    relationshipMap,
+    appId
+  );
 
   // 4. Handle existing permissions and add new objects to all roles
   const existingPermissions = existingContract?.permission || {};
@@ -1008,7 +1118,7 @@ export const createAppContract = async (
       }
 
       // Add permissions for all objects (existing + new)
-      updatedObjects.forEach((obj) => {
+      finalObjects.forEach((obj) => {
         if (!role.loco_permission[obj.slug]) {
           role.loco_permission[obj.slug] = { ...defaultPermission };
         }
@@ -1020,7 +1130,7 @@ export const createAppContract = async (
   } else {
     // No existing permissions - create default administrator role
     updatedPermissions = rolesPermissions(
-      updatedObjects,
+      finalObjects,
       "administrator",
       "administrator"
     );
@@ -1049,7 +1159,7 @@ export const createAppContract = async (
           },
           tags: existingContract?.contract_json?.tags || [],
           slug: appSlug,
-          objects: updatedObjects,
+          objects: finalObjects,
         },
         forms: forms_data,
         actions: existingContract?.actions || [],
