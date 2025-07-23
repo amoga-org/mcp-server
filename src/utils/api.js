@@ -540,12 +540,12 @@ const mergeObjectRelationships = (
   // Create a map for quick lookup of all objects
   const allObjectsMap = new Map();
 
-  // Add existing objects to map
   existingObjects.forEach((obj) => {
     allObjectsMap.set(obj.slug, obj);
   });
 
-  // Add new objects to map (they override existing if same slug)
+  // Add new/updated objects to map (they override existing if same slug)
+  // This ensures updated objects with new attributes take precedence
   newObjects.forEach((obj) => {
     allObjectsMap.set(obj.slug, obj);
   });
@@ -554,7 +554,10 @@ const mergeObjectRelationships = (
   relationshipMap.forEach((relInfo, key) => {
     const targetObject = allObjectsMap.get(relInfo.targetSlug);
     if (targetObject) {
-      // Check for duplicate relationships
+      // Ensure relationship array exists
+      if (!targetObject.relationship) {
+        targetObject.relationship = [];
+      }
       const existingRelIndex = targetObject.relationship.findIndex(
         (r) =>
           r.destination_object_slug ===
@@ -755,19 +758,36 @@ export const createAppContract = async (
     // Get default attributes for this object type
     let def_attributes = get_default_attributes();
 
+    // Get existing attributes if object exists
+    const existingAttributeKeys = existingObject
+      ? existingObject.attributes.map((attr) => attr.key)
+      : [];
+
     // Combine default attributes with object-specific attributes
-    const attriIds = Array.from(
       new Set([
-        ...(def_attributes[objectDef.type] || []),
-        ...(objectDef.attributes || []).map((attr) => {
-          const matchingAttr = Object.values(allAvailableAttributes).find(
-            (a) =>
-              a.display_name.toLowerCase() === attr.display_name.toLowerCase()
-          );
-          return matchingAttr ? matchingAttr.key : attr.key;
-        }),
-      ])
-    );
+    const newAttributeKeys = (objectDef.attributes || []).map((attr) => {
+      const matchingAttr = Object.values(allAvailableAttributes).find(
+        (a) => a.display_name.toLowerCase() === attr.display_name.toLowerCase()
+      );
+      return matchingAttr ? matchingAttr.key : attr.key;
+    });
+
+    // For existing objects, merge existing attributes with new ones
+    const attriIds = existingObject
+      ? Array.from(
+          new Set([
+            ...existingAttributeKeys, // Keep existing attributes
+            ...(def_attributes[objectDef.type] || []), // Add default attributes if missing
+            ...newAttributeKeys, // Add new attributes
+          ])
+        )
+      : Array.from(
+          new Set([
+            ...(def_attributes[objectDef.type] || []),
+            ...newAttributeKeys,
+          ])
+        );
+
     const indexed_attributes = {
       ...allAvailableAttributes,
       ...Object.fromEntries(
@@ -807,21 +827,53 @@ export const createAppContract = async (
         });
       }
     });
-    const attributes = attriIds
-      .map((key, idx) => {
-        if (!key) return null;
-        return {
-          key,
-          rank: idx,
-          parent: "",
-          hide: false,
-        };
-      })
-      .filter(Boolean);
-
-    // Create or update the object
+    // const attributes = attriIds
+    //   .map((key, idx) => {
+    //     if (!key) return null;
+    //     return {
+    //       key,
+    //       rank: idx,
+    //       parent: "",
+    //       hide: false,
+    //     };
+    //   })
+    //   .filter(Boolean);
+    const attributes = existingObject
+      ? (() => {
+          const existingAttrMap = new Map(
+            existingObject.attributes.map((attr) => [attr.key, attr])
+          );
+          return attriIds
+            .map((key, idx) => {
+              if (!key) return null;
+              if (existingAttrMap.has(key)) {
+                return existingAttrMap.get(key);
+              }
+              return {
+                key,
+                rank: idx,
+                parent: "",
+                hide: false,
+              };
+            })
+            .filter(Boolean);
+        })()
+      : attriIds
+          .map((key, idx) => {
+            if (!key) return null;
+            return {
+              key,
+              rank: idx,
+              parent: "",
+              hide: false,
+            };
+          })
+          .filter(Boolean);
     const updatedObject = existingObject
-      ? { ...existingObject }
+      ? {
+          ...existingObject,
+          attributes: attributes,
+        }
       : {
           name: objectDef.name,
           save_as_draft: false,
@@ -1077,10 +1129,8 @@ export const createAppContract = async (
 
   // Apply bidirectional relationships using the helper function
   const finalObjects = mergeObjectRelationships(
-    existingObjects,
-    updatedObjects.filter(
-      (obj) => !existingObjects.some((existing) => existing.slug === obj.slug)
-    ),
+    [],
+    updatedObjects,
     relationshipMap,
     appId
   );
