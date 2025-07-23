@@ -764,7 +764,6 @@ export const createAppContract = async (
       : [];
 
     // Combine default attributes with object-specific attributes
-      new Set([
     const newAttributeKeys = (objectDef.attributes || []).map((attr) => {
       const matchingAttr = Object.values(allAvailableAttributes).find(
         (a) => a.display_name.toLowerCase() === attr.display_name.toLowerCase()
