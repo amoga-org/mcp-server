@@ -824,6 +824,7 @@ export const createAppContract = async (
       ? { ...existingObject }
       : {
           name: objectDef.name,
+          save_as_draft: false,
           slug: slugInfo.generated_slug,
           type: objectDef.type,
           application_id: appId,
