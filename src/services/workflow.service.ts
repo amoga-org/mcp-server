@@ -1,6 +1,7 @@
 import { getCrmToken } from "./app.service.js";
 import { GenerateWorkflowParams } from "../types/app.types.js";
 import { getAppContract, publishApp } from "./app.service.js";
+import { makeWorkflow, genarateXML } from "../utils/workflowAlog.js";
 
 interface TaskRelationItem {
   slug: string;
@@ -83,41 +84,6 @@ const getTaskSchema = (
   });
   return updatedTaskSchema;
 };
-
-/**
- * Generate CMMN XML for a case object
- * @param appId - Application ID
- * @param caseName - Name of the case
- * @param caseSlug - Slug of the case
- * @returns CMMN XML string
- */
-export const generateCmmnXml = (
-  appId: string,
-  caseName: string,
-  caseSlug: string
-): string => {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:flowable="http://flowable.org/cmmn" xmlns:cmmndi="http://www.omg.org/spec/CMMN/20151109/CMMNDI" xmlns:dc="http://www.omg.org/spec/CMMN/20151109/DC" xmlns:di="http://www.omg.org/spec/CMMN/20151109/DI" targetNamespace="http://www.flowable.org/casedef" exporter="Flowable Open Source Modeler">
-<case id="${caseSlug}_${appId}" name="${caseSlug}_${appId}" flowable:initiatorVariableName="initiator"><casePlanModel id="${caseSlug}123" flowable:formKey="" flowable:formFieldValidation="true">
-    <planItem id="planItem${caseSlug}" name="${caseSlug}" definitionRef="${caseSlug}_${appId}stage"></planItem>
-    <stage id="${caseSlug}_${appId}stage" name="${caseSlug}_${appId}">
-    <extensionElements>
-    <flowable:planItemLifecycleListener sourceState="available" targetState="active" class="org.flowable.ui.application.lifecycle.listener.TemporalListener"></flowable:planItemLifecycleListener>
-  </extensionElements>
-    </stage></casePlanModel></case> <cmmndi:CMMNDI>
-    <cmmndi:CMMNDiagram id="CMMNDiagram_${caseSlug}_${appId}">
-    <cmmndi:CMMNShape id="CMMNShape_${caseSlug}" cmmnElementRef="${caseSlug}123">
-    <dc:Bounds height="100" width="100" x="20" y="30"></dc:Bounds>
-    <cmmndi:CMMNLabel></cmmndi:CMMNLabel>
-    </cmmndi:CMMNShape>
-    <cmmndi:CMMNShape id="CMMNShape_${caseSlug}" cmmnElementRef="planItem${caseSlug}">
-    <dc:Bounds height="50" width="50" x="40" y="50"></dc:Bounds>
-    <cmmndi:CMMNLabel></cmmndi:CMMNLabel>
-  </cmmndi:CMMNShape>
-    </cmmndi:CMMNDiagram>
-    </cmmndi:CMMNDI></definitions>`;
-};
-
 /**
  * Generate a UUID v4
  * @returns UUID string
@@ -197,7 +163,8 @@ export const saveWorkflowConfig = async (
   caseSlug: string,
   caseName: string,
   deploymentData: any,
-  relationship: any[] = []
+  relationship: any[] = [],
+  tasks: any[] = []
 ): Promise<any> => {
   try {
     const workflowConfig = {
@@ -208,10 +175,10 @@ export const saveWorkflowConfig = async (
           uuid: generateUUID(),
           cmmnId: deploymentData.data.appDefinition.definition.cmmnModels[0].id,
           deploymentId: deploymentData.data.appDefinition.id || "",
-          relationship: relationship.map((el) => el.slug) || [],
+          relationship: relationship || [],
           stages: [],
-          tasks: getTaskSchema(relationship, caseSlug) || [],
-          new: true,
+          tasks: tasks || [],
+          new: false,
         },
       },
       application: appId,
@@ -255,7 +222,7 @@ export const generateWorkflows = async (
   try {
     const { token } = await getCrmToken(params.baseUrl, params.tenantName);
     let appName = "";
-    let caseObjects = [];
+    let applicationDetail = null;
     const contractResult = await getAppContract({
       baseUrl: params.baseUrl,
       appId: params.appId,
@@ -264,23 +231,10 @@ export const generateWorkflows = async (
     try {
       if (contractResult.contract_json.slug) {
         appName = contractResult.contract_json.slug;
-      }
-      if (contractResult.contract_json.objects) {
-        caseObjects = contractResult.contract_json.objects
-          .filter((obj: any) => {
-            return obj.type === "workitem";
-          })
-          .map((obj: any) => ({
-            name: obj.name,
-            slug: obj.slug || obj.name.toLowerCase().replace(/\s+/g, "_"),
-            relationship:
-              obj.relationship
-                ?.filter((item: any) => !item.is_external)
-                ?.map((el: any) => ({
-                  name: el.destination_display_name,
-                  slug: el.destination_object_slug,
-                })) || [],
-          }));
+        applicationDetail = {
+          ...contractResult.contract_json,
+          identifier: params.appId,
+        };
       }
     } catch (contractError) {
       throw new Error(
@@ -297,58 +251,48 @@ export const generateWorkflows = async (
       );
     }
 
-    if (!caseObjects || caseObjects.length === 0) {
+    if (
+      !contractResult.contract_json.objects ||
+      contractResult.contract_json.objects.length === 0
+    ) {
+      throw new Error("No objects found in the app contract");
+    }
+
+    // Generate workflow data using makeWorkflow function from workflowAlog.js
+    const workflowData = makeWorkflow({
+      objects: contractResult.contract_json.objects,
+      dispatch: "dispatch", // Default dispatch value
+      application_id: params.appId,
+    });
+
+    if (!workflowData || workflowData.length === 0) {
       throw new Error(
-        "No workitem objects found. Please provide workitem objects or ensure the app has workitem-type objects (type: 'workitem') in its contract"
+        "No workflows could be generated. Ensure the app has workitem objects with task relationships"
       );
     }
-    // if (params.caseObjects && params.caseObjects.length > 0) {
-    //   try {
-    //     const validCaseObjects =
-    //       contractResult.contract_json.objects?.filter(
-    //         (obj: any) => obj.type === "workitem"
-    //       ) || [];
-    //     const validCaseSlugs = validCaseObjects.map(
-    //       (obj: any) => obj.slug || obj.name.toLowerCase().replace(/\s+/g, "_")
-    //     );
-
-    //     // Validate each provided case object
-    //     for (const providedCase of params.caseObjects) {
-    //       if (!validCaseSlugs.includes(providedCase.slug)) {
-    //         throw new Error(
-    //           `Invalid case object '${providedCase.name}' (${providedCase.slug}). Only workitem objects (type: 'workitem') are allowed for workflow generation.`
-    //         );
-    //       }
-    //     }
-    //   } catch (contractError) {
-    //     throw new Error(
-    //       `Failed to validate case objects against app contract: ${
-    //         contractError instanceof Error
-    //           ? contractError.message
-    //           : "Unknown error"
-    //       }`
-    //     );
-    //   }
-    // }
 
     const results = [];
 
-    for (const caseObj of caseObjects) {
+    for (const workflowCase of workflowData) {
       try {
-        // Generate CMMN XML
-        const cmmnXml = generateCmmnXml(
-          params.appId,
-          caseObj.name,
-          caseObj.slug
+        // Generate CMMN XML using genarateXML function from workflowAlog.js
+        const cmmnXml = genarateXML(
+          { ...applicationDetail, slug: "" },
+          workflowCase.slug,
+          [...workflowCase.stages, ...workflowCase.tasks]
         );
 
-        // Deploy to Flowable
+        if (!cmmnXml) {
+          throw new Error(
+            `Failed to generate CMMN XML for workflow case: ${workflowCase.name}`
+          );
+        }
         const deploymentResult = await deployCmmnWorkflow(
           params.baseUrl,
           token,
           params.appId,
           appName,
-          caseObj.slug,
+          workflowCase.slug,
           cmmnXml
         );
 
@@ -358,21 +302,32 @@ export const generateWorkflows = async (
           token,
           params.appId,
           appName,
-          caseObj.slug,
-          caseObj.name,
+          workflowCase.slug,
+          workflowCase.name,
           deploymentResult,
-          caseObj.relationship || []
+          workflowCase.relationship || [],
+          workflowCase.tasks || []
         );
 
         results.push({
-          caseObject: caseObj,
+          caseObject: {
+            name: workflowCase.name,
+            slug: workflowCase.slug,
+            relationship: workflowCase.relationship,
+            stages: workflowCase.stages,
+            tasks: workflowCase.tasks,
+          },
           deployment: deploymentResult,
           configuration: configResult,
           success: true,
         });
       } catch (error) {
         results.push({
-          caseObject: caseObj,
+          caseObject: {
+            name: workflowCase.name,
+            slug: workflowCase.slug,
+            relationship: workflowCase.relationship,
+          },
           error: error instanceof Error ? error.message : "Unknown error",
           success: false,
         });
@@ -409,11 +364,11 @@ export const generateWorkflows = async (
     return {
       success: true,
       results,
-      totalProcessed: caseObjects.length,
+      totalProcessed: workflowData.length,
       successful: successfulWorkflows,
       failed: failedWorkflows,
       appName,
-      caseObjectsProcessed: caseObjects,
+      workflowDataGenerated: workflowData,
       publishing: {
         attempted: successfulWorkflows > 0 && failedWorkflows === 0,
         success: publishSuccess,
