@@ -1,5 +1,37 @@
+import { v4 as uuidv4 } from "uuid";
 let cmmnshapedata = "";
 let edgesData = "";
+
+function indexBy(list, fn = (obj) => obj) {
+  try {
+    return list.reduce(
+      (prev, next) => ({
+        ...prev,
+        [fn(next)]: next,
+      }),
+      {}
+    );
+  } catch (error) {
+    console.error(error);
+    return {};
+  }
+}
+const coordrinateKeys = {
+  tl_x: null,
+  tl_y: null,
+  tr_x: null,
+  tr_y: null,
+  bl_x: null,
+  bl_y: null,
+  br_x: null,
+  br_y: null,
+  xp: null,
+  yp: null,
+  x: null,
+  y: null,
+  w: null,
+  h: null,
+};
 export const genarateXML = (applicationDetail, caseName, stages) => {
   try {
     const stagesLength = stages.length;
@@ -1380,7 +1412,7 @@ export const makeWorkflow = ({
   }
 };
 
-export const initialTasks = ({ relationship, taskGroupedBySlug, objects }) => {
+const initialTasks = ({ relationship, taskGroupedBySlug, objects }) => {
   try {
     let tasks = relationship.reduce((acc, curr) => {
       if (taskGroupedBySlug[curr]) acc = [...acc, taskGroupedBySlug[curr]];
