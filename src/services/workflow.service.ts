@@ -253,7 +253,6 @@ export const saveWorkflowConfig = async (
         ? JSON.stringify([workflowConfig])
         : JSON.stringify(workflowConfig),
     });
-    console.log("saveWorkflowConfig response", response);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
