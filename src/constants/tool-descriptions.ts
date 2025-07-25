@@ -220,7 +220,7 @@ export const TOOL_DESCRIPTIONS = {
     "2. CHECK_PUBLISH_STATUS must confirm publishing is complete\n" +
     "3. GET_APP_CONTRACT must have been re-run after publishing to fetch updated contract\n\n" +
     "⚠️ AUTO-FETCH CONTRACT: If GET_APP_CONTRACT hasn't been run recently, it will be automatically executed first to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
-    "⚠️ OBJECT TYPE RESTRICTION: This tool ONLY works with 'master' and 'object' type objects. It will skip workitems, tasks, and other object types.\n\n" +
+    "⚠️ OBJECT TYPE RESTRICTION: This tool ONLY works with 'task','workitem','master' and 'object' type objects.\n\n" +
     "Then generates realistic test data using the contract's object maps for status and priority values (loco_name). " +
     "Generates realistic test data for each attribute while respecting system attributes. " +
     "⚠️ Note: System attributes (status, priority, Due Date, name, assignee) will be populated using appropriate values from the contract's object maps, falling back to default values if not defined.",
