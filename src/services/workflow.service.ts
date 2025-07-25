@@ -3,86 +3,69 @@ import { GenerateWorkflowParams } from "../types/app.types.js";
 import { getAppContract, publishApp } from "./app.service.js";
 import { makeWorkflow, genarateXML } from "../utils/workflowAlog.js";
 
-interface TaskRelationItem {
-  slug: string;
-  name: string;
-}
-
-interface TaskSchemaItem {
-  tl_x: number | null;
-  tl_y: number | null;
-  tr_x: number | null;
-  tr_y: number | null;
-  bl_x: number | null;
-  bl_y: number | null;
-  br_x: number | null;
-  br_y: number | null;
-  xp: number | null;
-  yp: number | null;
-  x: number | null;
-  y: number | null;
-  w: number | null;
-  h: number | null;
-  actions: any[];
-  isBlockedOn: any[];
-  rules: any[];
-  unmapped: boolean;
-  slug: string;
-  display_name: string;
-  taskname: string;
-  parent: string;
-  is_update: boolean;
-  sentry: any[];
-  tasks: any[];
-  untouched: boolean;
-  isDefault: boolean;
-  isDefaultCondition: string;
-  repetetion: boolean;
-  manualActivation: boolean;
-  type: string;
-}
-
-const getTaskSchema = (
-  taskRelation: TaskRelationItem[],
-  parent: string
-): TaskSchemaItem[] => {
-  const updatedTaskSchema: TaskSchemaItem[] = [];
-  taskRelation.forEach((el: TaskRelationItem) => {
-    updatedTaskSchema.push({
-      tl_x: null,
-      tl_y: null,
-      tr_x: null,
-      tr_y: null,
-      bl_x: null,
-      bl_y: null,
-      br_x: null,
-      br_y: null,
-      xp: null,
-      yp: null,
-      x: null,
-      y: null,
-      w: null,
-      h: null,
-      actions: [],
-      isBlockedOn: [],
-      rules: [],
-      unmapped: true,
-      slug: el.slug,
-      display_name: el.name,
-      taskname: el.slug,
-      parent: parent,
-      is_update: true,
-      sentry: [],
-      tasks: [],
-      untouched: true,
-      isDefault: false,
-      isDefaultCondition: "",
-      repetetion: true,
-      manualActivation: false,
-      type: "task",
+/**
+ * Get workflow data for an application
+ * @param baseUrl - Base URL for the API
+ * @param appId - Application ID
+ * @param defaultCases - Default workflow cases
+ * @returns Promise with workflow data
+ */
+export const getWorkflowData = async (
+  baseUrl: string,
+  appId: string,
+  defaultCases: any[],
+  token: string
+): Promise<{
+  newCases: any[];
+  flowsData: any[];
+  isNewFlow: boolean;
+  meta_data: any;
+}> => {
+  try {
+    const res = await fetch(`${baseUrl}/api/v2/work/flows/${appId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
     });
-  });
-  return updatedTaskSchema;
+    const response = await res.json();
+    const newCases: any[] = [];
+    const flowsData: any[] = [];
+    let meta_data = {};
+    let isNewFlow = true;
+    const data = response.data;
+    isNewFlow =
+      Boolean(data.length === 0) ||
+      data[0].meta_data.generate_flowable_app ||
+      false;
+
+    if (!isNewFlow) {
+      meta_data = data[0].meta_data;
+    }
+
+    defaultCases.map((defaultCase) => {
+      let currentCaseIndex = -1;
+      if (data.length > 0) {
+        currentCaseIndex = data.findIndex(
+          (el: any) => el.object_slug === defaultCase.slug
+        );
+      }
+      if (currentCaseIndex !== -1 && data.length > 0) {
+        newCases.push({
+          ...data[currentCaseIndex].flow_config[defaultCase.slug],
+          relationship: defaultCase.relationship,
+          tasks: defaultCase.tasks,
+          new: false,
+        });
+      } else {
+        newCases.push({ ...defaultCase, deploymentId: "", new: true });
+      }
+    });
+
+    return { newCases, flowsData, isNewFlow, meta_data };
+  } catch (error) {
+    throw error;
+  }
 };
 /**
  * Generate a UUID v4
@@ -104,6 +87,7 @@ export const generateUUID = (): string => {
  * @param appName - Application name
  * @param caseSlug - Case slug
  * @param cmmnXml - CMMN XML content
+ * @param newFlow - Whether this is a new flow or update
  * @returns Promise with deployment result
  */
 export const deployCmmnWorkflow = async (
@@ -112,7 +96,8 @@ export const deployCmmnWorkflow = async (
   appId: string,
   appName: string,
   caseSlug: string,
-  cmmnXml: string
+  cmmnXml: string,
+  newFlow: boolean
 ): Promise<any> => {
   try {
     const formData = new FormData();
@@ -125,6 +110,66 @@ export const deployCmmnWorkflow = async (
       `${baseUrl}/api/v1/work/tenant/sdk/application/app/cmmn/deploy`,
       {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          accept: "application/json, text/plain, */*",
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Update existing CMMN workflow using PUT request
+ * @param baseUrl - Base URL for the API
+ * @param token - Authentication token
+ * @param appId - Application ID
+ * @param appName - Application name
+ * @param caseSlug - Case slug
+ * @param cmmnXml - CMMN XML content
+ * @param cmmnId - Existing CMMN ID to update
+ * @param meta_data - Metadata for the application
+ * @returns Promise with update result
+ */
+export const updateCmmnWorkflow = async (
+  baseUrl: string,
+  token: string,
+  appId: string,
+  appName: string,
+  caseSlug: string,
+  cmmnXml: string,
+  cmmnId: string,
+  meta_data: any
+): Promise<any> => {
+  try {
+    console.log("Updating CMMN workflow with ID:", cmmnId);
+    const fileName = `${caseSlug}flowableCase.cmmn.xml`;
+    const formData = new FormData();
+    const xmlBlob = new Blob([cmmnXml], { type: "application/octet-stream" });
+    formData.append("file", xmlBlob, fileName);
+    formData.append(
+      "data",
+      JSON.stringify({
+        app_id: meta_data.flow_app_id,
+        app_name: appName,
+        amoga_app_id: appId,
+      })
+    );
+
+    const response = await fetch(
+      `${baseUrl}/api/v1/work/tenant/sdk/application/app/cmmn/deploy/${cmmnId}`,
+      {
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
           accept: "application/json, text/plain, */*",
@@ -164,7 +209,8 @@ export const saveWorkflowConfig = async (
   caseName: string,
   deploymentData: any,
   relationship: any[] = [],
-  tasks: any[] = []
+  tasks: any[] = [],
+  newFlow: boolean = false
 ): Promise<any> => {
   try {
     const workflowConfig = {
@@ -190,16 +236,24 @@ export const saveWorkflowConfig = async (
       },
     };
 
-    const response = await fetch(`${baseUrl}/api/v2/work/flows/${appId}`, {
-      method: "POST",
+    let url = `${baseUrl}/api/v2/work/flows/${appId}`;
+    let method = "POST";
+    if (!newFlow) {
+      url = `/api/v2/work/flows/${appId}?object_slug=${caseSlug}`;
+      method = "PUT";
+    }
+    const response = await fetch(url, {
+      method,
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         accept: "application/json, text/plain, */*",
       },
-      body: JSON.stringify([workflowConfig]),
+      body: newFlow
+        ? JSON.stringify([workflowConfig])
+        : JSON.stringify(workflowConfig),
     });
-
+    console.log("saveWorkflowConfig response", response);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -264,8 +318,14 @@ export const generateWorkflows = async (
       dispatch: "dispatch", // Default dispatch value
       application_id: params.appId,
     });
+    const { newCases, flowsData, isNewFlow, meta_data } = await getWorkflowData(
+      params.baseUrl,
+      params.appId,
+      workflowData,
+      token
+    );
 
-    if (!workflowData || workflowData.length === 0) {
+    if (!newCases || newCases.length === 0) {
       throw new Error(
         "No workflows could be generated. Ensure the app has workitem objects with task relationships"
       );
@@ -273,7 +333,7 @@ export const generateWorkflows = async (
 
     const results = [];
 
-    for (const workflowCase of workflowData) {
+    for (const workflowCase of newCases) {
       try {
         // Generate CMMN XML using genarateXML function from workflowAlog.js
         const cmmnXml = genarateXML(
@@ -287,14 +347,34 @@ export const generateWorkflows = async (
             `Failed to generate CMMN XML for workflow case: ${workflowCase.name}`
           );
         }
-        const deploymentResult = await deployCmmnWorkflow(
-          params.baseUrl,
-          token,
-          params.appId,
-          appName,
-          workflowCase.slug,
-          cmmnXml
-        );
+
+        let deploymentResult;
+
+        // Check if this is a new workflow or update existing one
+        if (workflowCase.new) {
+          // Create new workflow
+          deploymentResult = await deployCmmnWorkflow(
+            params.baseUrl,
+            token,
+            params.appId,
+            appName,
+            workflowCase.slug,
+            cmmnXml,
+            workflowCase.new
+          );
+        } else {
+          // Update existing workflow
+          deploymentResult = await updateCmmnWorkflow(
+            params.baseUrl,
+            token,
+            params.appId,
+            appName,
+            workflowCase.slug,
+            cmmnXml,
+            workflowCase.cmmnId,
+            meta_data
+          );
+        }
 
         // Save workflow configuration
         const configResult = await saveWorkflowConfig(
@@ -306,7 +386,8 @@ export const generateWorkflows = async (
           workflowCase.name,
           deploymentResult,
           workflowCase.relationship || [],
-          workflowCase.tasks || []
+          workflowCase.tasks || [],
+          workflowCase.new
         );
 
         results.push({
