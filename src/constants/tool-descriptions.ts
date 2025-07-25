@@ -48,9 +48,9 @@ export const TOOL_DESCRIPTIONS = {
     "2. CREATE_ATTRIBUTES - Define custom attributes for objects (optional but recommended)\n" +
     "3. CREATE_OBJECT - Create objects using the defined attributes\n" +
     "4. GET_APP_CONTRACT - Fetch application contract to understand structure\n" +
-    "5. CREATE_UPDATE_ROLES - Set up user roles and permissions for the objects\n" +
-    "6. PUBLISH_APP - Publish the application to make it available\n" +
-    "7. CHECK_PUBLISH_STATUS - Monitor publishing status until all components are deployed\n" +
+    "5. GENERATE_WORKFLOW - Generate workflows for the created objects\n" +
+    "6. CREATE_UPDATE_ROLES - Set up user roles and permissions for the objects\n" +
+    "7. PUBLISH_APP - Publish the application to make it available\n" +
     "8. GET_APP_CONTRACT - Re-fetch contract after publishing (for SOT and dummy data)\n" +
     "9. CREATE_SOT - Define status transitions and workflows\n" +
     "10. ADD_DUMMY_DATA - Add test data to objects (only for 'master' and 'object' type objects)\n\n" +
@@ -217,8 +217,8 @@ export const TOOL_DESCRIPTIONS = {
     "⚠️ Run after CREATE_SOT as the final step in app setup.\n\n" +
     "⚠️ PREREQUISITES:\n" +
     "1. All previous steps (1-9) must be completed successfully\n" +
-    "2. CHECK_PUBLISH_STATUS must confirm publishing is complete\n" +
-    "3. GET_APP_CONTRACT must have been re-run after publishing to fetch updated contract\n\n" +
+    // "2. CHECK_PUBLISH_STATUS must confirm publishing is complete\n" +/
+    "2. GET_APP_CONTRACT must have been re-run after publishing to fetch updated contract\n\n" +
     "⚠️ AUTO-FETCH CONTRACT: If GET_APP_CONTRACT hasn't been run recently, it will be automatically executed first to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
     "⚠️ OBJECT TYPE RESTRICTION: This tool ONLY works with 'task','workitem','master' and 'object' type objects.\n\n" +
     "Then generates realistic test data using the contract's object maps for status and priority values (loco_name). " +
@@ -274,7 +274,7 @@ export const TOOL_DESCRIPTIONS = {
     "• appName: Will be fetched from app contract if not provided\n" +
     "• caseObjects: Will be auto-discovered from app contract if not provided (filters for type: 'workitem' only)\n\n" +
     "📝 NEXT STEPS AFTER SUCCESS:\n" +
-    "• Run CHECK_PUBLISH_STATUS to monitor deployment progress\n" +
+    "• Run PUBLISH_APP to monitor deployment progress\n" +
     "• Then proceed with CREATE_SOT and ADD_DUMMY_DATA",
 
   CREATE_AUTOMATION:
