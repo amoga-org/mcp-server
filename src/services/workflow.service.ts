@@ -152,7 +152,6 @@ export const updateCmmnWorkflow = async (
   meta_data: any
 ): Promise<any> => {
   try {
-    console.log("Updating CMMN workflow with ID:", cmmnId);
     const fileName = `${caseSlug}flowableCase.cmmn.xml`;
     const formData = new FormData();
     const xmlBlob = new Blob([cmmnXml], { type: "application/octet-stream" });
@@ -239,7 +238,7 @@ export const saveWorkflowConfig = async (
     let url = `${baseUrl}/api/v2/work/flows/${appId}`;
     let method = "POST";
     if (!newFlow) {
-      url = `/api/v2/work/flows/${appId}?object_slug=${caseSlug}`;
+      url = `${baseUrl}/api/v2/work/flows/${appId}?object_slug=${caseSlug}`;
       method = "PUT";
     }
     const response = await fetch(url, {
@@ -374,7 +373,8 @@ export const generateWorkflows = async (
             meta_data
           );
         }
-
+        const relationships = workflowCase.relationship || [];
+        const tasks = workflowCase.tasks || [];
         // Save workflow configuration
         const configResult = await saveWorkflowConfig(
           params.baseUrl,
@@ -384,8 +384,8 @@ export const generateWorkflows = async (
           workflowCase.slug,
           workflowCase.name,
           deploymentResult,
-          workflowCase.relationship || [],
-          workflowCase.tasks || [],
+          relationships,
+          tasks,
           workflowCase.new
         );
 
