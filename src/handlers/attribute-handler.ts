@@ -222,6 +222,26 @@ const typeMetaData = {
     type_strapi: "datetime",
     component: "calendar",
   },
+  related_field: [
+    {
+      label: "Related Field",
+      value: "related_field",
+      title: "Related Field",
+      tj_type: "Dropdown",
+      component: "Dropdown",
+      type_strapi: "string",
+      strapi_unique: false,
+      data_type: "string",
+      validation_type: "",
+      component_type: "related_field",
+      attribute_meta: {
+        options: [],
+        is_color: true,
+        is_dynamic: false,
+        related_objects_configuration: [],
+      },
+    },
+  ],
 };
 
 // Reserved system attributes that cannot be created
@@ -258,15 +278,28 @@ type HandlerParams = {
   tenantName: string;
   attributes: Array<{
     display_name: string;
-    component_type: "enumeration" | "text" | "number" | "boolean" | "date";
+    component_type:
+      | "enumeration"
+      | "text"
+      | "number"
+      | "boolean"
+      | "date"
+      | "related_field";
     component_subtype: string;
     key: string;
+    related_objects_configuration?: Array<{
+      parent: string | null;
+      attributes: string[];
+      object_slug: string;
+      source_attribute?: string;
+    }>;
   }>;
 };
 
 export const createAttributeHandler = {
   name: "mcp_create-attribute",
-  description: "Create a new attribute with automatic slug generation",
+  description:
+    "Create a new attribute with automatic slug generation. IMPORTANT: For related_field attributes, ensure object_slug values are valid object slugs (lowercase, letters/numbers/underscores/hyphens only, no spaces). Provide exactly one attribute in the attributes array for each related object configuration.",
   parameters: {
     type: "object",
     properties: {
@@ -281,16 +314,58 @@ export const createAttributeHandler = {
       },
       attributes: {
         type: "array",
+        description:
+          "Array of attributes to create. For related_field type, include related_objects_configuration with proper object_slug format.",
         items: {
           type: "object",
           properties: {
             display_name: { type: "string" },
             component_type: {
               type: "string",
-              enum: ["enumeration", "text", "number", "boolean", "date"],
+              enum: [
+                "enumeration",
+                "text",
+                "number",
+                "boolean",
+                "date",
+                "related_field",
+              ],
+              description:
+                "Type of component. Use 'related_field' for dropdown fields that reference other objects.",
             },
             component_subtype: { type: "string" },
             key: { type: "string" },
+            related_objects_configuration: {
+              type: "array",
+              description:
+                "Required for related_field type. Configuration for cascading dropdowns. CRITICAL: object_slug must be a valid slug (lowercase, no spaces, only letters/numbers/underscores/hyphens). Provide exactly one attribute in the attributes array.",
+              items: {
+                type: "object",
+                properties: {
+                  parent: {
+                    type: ["string", "null"],
+                    description:
+                      "Parent object slug for hierarchical relationships, null for root object. Must be valid slug format if provided.",
+                  },
+                  attributes: {
+                    type: "array",
+                    description:
+                      "Array with exactly ONE attribute name to fetch from the object (e.g., ['name'])",
+                    items: { type: "string" },
+                  },
+                  object_slug: {
+                    type: "string",
+                    description:
+                      "The slug of the object to fetch data from. MUST be valid object slug: lowercase, no spaces, only letters/numbers/underscores/hyphens (e.g., 'student', 'customer_data', 'order-items')",
+                  },
+                  source_attribute: {
+                    type: "string",
+                    description:
+                      "Optional: The source attribute that links to parent object",
+                  },
+                },
+              },
+            },
           },
           required: [
             "display_name",
@@ -353,6 +428,9 @@ export const createAttributeHandler = {
 
           if (attr.component_type === "date") {
             metadata = typeMetaData.date;
+          } else if (attr.component_type === "related_field") {
+            // Special handling for related_field type
+            metadata = typeMetaData.related_field[0];
           } else {
             const typeCategory = typeMetaData[attr.component_type];
             if (Array.isArray(typeCategory)) {
@@ -363,6 +441,22 @@ export const createAttributeHandler = {
                 metadata = foundMetadata;
               }
             }
+          }
+
+          // Build attribute_meta based on component_type
+          let attributeMeta: any = {
+            is_color: true,
+            options: [],
+            is_dynamic: false,
+          };
+
+          // Special handling for related_field type
+          if (
+            attr.component_type === "related_field" &&
+            attr.related_objects_configuration
+          ) {
+            attributeMeta.related_objects_configuration =
+              attr.related_objects_configuration;
           }
 
           return {
@@ -401,12 +495,12 @@ export const createAttributeHandler = {
             is_primary: false,
             attribute_of: "",
             is_auditable: false,
-            attribute_meta: {
-              is_color: true,
-              options: [],
-              is_dynamic: false,
-            },
+            attribute_meta: attributeMeta,
             is_global: false,
+            related_objects_configuration:
+              attr.component_type === "related_field"
+                ? attr.related_objects_configuration || []
+                : [],
           };
         }
       );

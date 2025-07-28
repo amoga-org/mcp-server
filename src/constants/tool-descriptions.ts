@@ -209,8 +209,10 @@ export const TOOL_DESCRIPTIONS = {
     "'status', 'priority', 'Due Date', 'name', and 'assignee'. Attempting to create these will result in an error. " +
     "\n\nThis tool allows you to define custom fields with specific display names, component types, component subtypes, and unique keys. " +
     "Each attribute will be created with auto-generated unique slugs to prevent conflicts. " +
-    "Supported component types: enumeration (enumeration, multiselect), text (string, text, uuid, password, email, comment, instruction, title, Container, richText), number (integer, biginteger, float), boolean (toggle, checkbox), date. " +
-    "The component_subtype must match one of the valid values for the selected component_type category.",
+    "Supported component types: enumeration (enumeration, multiselect), text (string, text, uuid, password, email, comment, instruction, title, Container, richText), number (integer, biginteger, float), boolean (toggle, checkbox), date, related_field (for cascading dropdowns like Country→State→City). " +
+    "The component_subtype must match one of the valid values for the selected component_type category. " +
+    "\n\n🔗 RELATED_FIELD TYPE: For cascading dropdowns, use component_type='related_field' and provide related_objects_configuration array with parent-child object relationships. " +
+    "Each configuration object should specify: parent (null for root), attributes (array of attribute names to fetch), object_slug (target object), and optional source_attribute (linking field).",
 
   ADD_DUMMY_DATA:
     "Step 10 in app creation workflow: Add AI-generated dummy data to tables based on object schema and attribute types. " +

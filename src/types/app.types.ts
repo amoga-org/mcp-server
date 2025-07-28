@@ -25,7 +25,13 @@ export interface AppProps {
 
 export interface Attribute {
   display_name: string;
-  component_type: "text" | "enumeration" | "date" | "boolean" | "number";
+  component_type:
+    | "text"
+    | "enumeration"
+    | "date"
+    | "boolean"
+    | "number"
+    | "related_field";
 }
 
 export interface AppPublishStatus {
@@ -209,7 +215,14 @@ export const CreateObjectSchema = z.object({
                 .string()
                 .describe("Display name of the attribute"),
               component_type: z
-                .enum(["text", "enumeration", "date", "boolean", "number"])
+                .enum([
+                  "text",
+                  "enumeration",
+                  "date",
+                  "boolean",
+                  "number",
+                  "related_field",
+                ])
                 .describe("Type of the component"),
             })
           )
@@ -520,12 +533,45 @@ export const CreateAttributeSchema = z.object({
       z.object({
         display_name: z.string().describe("Display name of the attribute"),
         component_type: z
-          .enum(["enumeration", "text", "number", "boolean", "date"])
+          .enum([
+            "enumeration",
+            "text",
+            "number",
+            "boolean",
+            "date",
+            "related_field",
+          ])
           .describe("Component type category for the attribute"),
         component_subtype: z
           .string()
           .describe("Specific component subtype within the category"),
         key: z.string().describe("Unique key for the attribute"),
+        related_objects_configuration: z
+          .array(
+            z.object({
+              parent: z
+                .string()
+                .nullable()
+                .describe("Parent object slug, null for root object"),
+              attributes: z
+                .array(z.string())
+                .length(1)
+                .describe(
+                  "Array with exactly one attribute name to fetch from this object"
+                ),
+              object_slug: z
+                .string()
+                .describe("The slug of the object to fetch data from"),
+              source_attribute: z
+                .string()
+                .optional()
+                .describe("The source attribute that links to parent object"),
+            })
+          )
+          .optional()
+          .describe(
+            "Configuration for related objects hierarchy for cascading dropdowns"
+          ),
       })
     )
     .describe("Array of attributes to create"),
@@ -536,9 +582,21 @@ export interface CreateAttributeParams {
   tenantName: string;
   attributes: Array<{
     display_name: string;
-    component_type: "enumeration" | "text" | "number" | "boolean" | "date";
+    component_type:
+      | "enumeration"
+      | "text"
+      | "number"
+      | "boolean"
+      | "date"
+      | "related_field";
     component_subtype: string;
     key: string;
+    related_objects_configuration?: Array<{
+      parent: string | null;
+      attributes: string[];
+      object_slug: string;
+      source_attribute?: string;
+    }>;
   }>;
 }
 
