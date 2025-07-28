@@ -312,7 +312,7 @@ export const createUser = async (
           category: "usersMJJ",
           data: {
             usersMJJ__name: userName,
-            usersMJJ__status: "todo",
+            usersMJJ__status: "active",
             usersMJJ__emailidCUB: userEmail,
             usersMJJ__phonenumGMN: phoneNumber,
             usersMJJ__reportstIMO: "",
