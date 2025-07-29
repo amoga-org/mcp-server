@@ -740,7 +740,7 @@ export const createAppContract = async (
   for (const objectDef of objects) {
     // Check if object already exists
     const existingObject = existingObjects.find(
-      (existing) => existing.name.toLowerCase() === objectDef.name.toLowerCase()
+      (existing) => existing.name.toLowerCase() === objectDef.name.toLowerCase() || existing.slug.toLowerCase() === objectDef.name.toLowerCase()
     );
 
     const slugInfo = existingObject
