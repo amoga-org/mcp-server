@@ -16,7 +16,40 @@ import {
   createDefaultTaskPages,
   updateTaskDashboardPages,
 } from "../utils/api.js";
+// Helper function to get publish version from tenant preload
+export async function getPublishVersion(
+  baseUrl: string,
+  tenantName: string
+): Promise<number> {
+  try {
+    const response = await fetch(
+      `${baseUrl}/api/v2/core/preload/public?tenant=${tenantName}`,
+      {
+        method: "GET",
+        headers: {
+          accept: "application/json, text/plain, */*",
+        },
+      }
+    );
 
+    if (!response.ok) {
+      throw new Error(`Failed to get preload data: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    // Extract publish_version from the response
+    const publishVersion = data?.data?.publish_version;
+
+    if (!publishVersion) {
+      throw new Error("Publish version not found in preload response");
+    }
+
+    return publishVersion;
+  } catch (error: any) {
+    throw new Error(`Failed to get publish version: ${error.message}`);
+  }
+}
 // Helper function to get CRM token
 export async function getCrmToken(
   baseUrl: string,
@@ -753,10 +786,10 @@ export async function publishApp(params: PublishAppParams): Promise<{
 }> {
   const { baseUrl, appId, tenantName } = params;
   const contract = await getAppContract({ baseUrl, tenantName, appId });
-
+  const publish_version = await getPublishVersion(baseUrl, tenantName);
   const { token } = await getCrmToken(baseUrl, tenantName);
-  let apiEndpoint = '';
-  if (tenantName === "qa") {
+  let apiEndpoint = "";
+  if (publish_version === 2) {
     apiEndpoint = `${baseUrl}/api/v2/app/publish/${appId}`;
   } else {
     apiEndpoint = `${baseUrl}/api/v1/core/studio/app/publish/${appId}`;
@@ -790,7 +823,7 @@ export async function publishApp(params: PublishAppParams): Promise<{
       await updateTaskDashboardPages(
         baseUrl,
         appId,
-        contract.objects || [],
+        contract.contract_json.objects || [],
         tenantName
       );
     } catch (error) {}
