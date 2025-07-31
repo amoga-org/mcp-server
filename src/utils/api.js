@@ -162,7 +162,9 @@ export const updateTableWidget = async (
           Authorization: `Bearer ${token}`,
           "content-type": "application/json",
         },
-        body: { page_widget: JSON.stringify(widgetConfig) },
+        body: JSON.stringify({
+          page_widget: [widgetConfig],
+        }),
       }
     );
     if (!response.ok) {
@@ -227,9 +229,11 @@ export const updateTaskDashboardPages = async (
             props: {
               ...widget.configs.props,
               myTasksObjects: myTasksObjects,
+              requiredObjects: [],
             },
           };
           await updateTableWidget(baseUrl, token, page.id, widget.id, {
+            ...widget,
             configs: updatedWidgetConfig,
             // type: widget.type,
           });
@@ -740,7 +744,9 @@ export const createAppContract = async (
   for (const objectDef of objects) {
     // Check if object already exists
     const existingObject = existingObjects.find(
-      (existing) => existing.name.toLowerCase() === objectDef.name.toLowerCase() || existing.slug.toLowerCase() === objectDef.name.toLowerCase()
+      (existing) =>
+        existing.name.toLowerCase() === objectDef.name.toLowerCase() ||
+        existing.slug.toLowerCase() === objectDef.name.toLowerCase()
     );
 
     const slugInfo = existingObject
