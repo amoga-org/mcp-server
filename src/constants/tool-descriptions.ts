@@ -50,11 +50,15 @@ export const TOOL_DESCRIPTIONS = {
     "4. GET_APP_CONTRACT - Fetch application contract to understand structure\n" +
     "5. GENERATE_WORKFLOW - Generate workflows for the created objects\n" +
     "6. CREATE_UPDATE_ROLES - Set up user roles and permissions for the objects\n" +
-    "7. PUBLISH_APP - Publish the application to make it available\n" +
-    "8. GET_APP_CONTRACT - Re-fetch contract after publishing (for SOT and dummy data)\n" +
-    "9. CREATE_SOT - Define status transitions and workflows\n" +
-    "10. ADD_DUMMY_DATA - Add test data to objects (only for 'master' and 'object' type objects)\n\n" +
-    "⚠️ IMPORTANT: Each step depends on the previous one. Steps 7-8 ensure the app is fully published before proceeding with SOT and dummy data operations.",
+    "7. PUBLISH_APP - Publish the application to make it available (MUST run after CREATE_UPDATE_ROLES)\n" +
+    "8. CHECK_PUBLISH_STATUS - Monitor deployment status until complete\n" +
+    "9. GET_APP_CONTRACT - Re-fetch contract after publishing (for SOT and dummy data)\n" +
+    "10. CREATE_SOT - Define status transitions and workflows\n" +
+    "11. ADD_DUMMY_DATA - Add test data to objects (only for 'master' and 'object' type objects)\n" +
+    "12. CREATE_NAVBAR - Create role-based navigation bars for all application roles\n" +
+    "13. CREATE_JOB_TITLE - Create job titles linked to roles and navbars\n" +
+    "14. CREATE_USER - Create user accounts mapped to job titles and departments\n\n" +
+    "⚠️ IMPORTANT: Each step depends on the previous one. Steps 7-8 ensure the app is fully published before proceeding with SOT and dummy data operations. Steps 12-14 complete the user management setup for a fully functional application.",
 
   GET_APPS: "Get all applications for a tenant",
 
@@ -200,7 +204,9 @@ export const TOOL_DESCRIPTIONS = {
     "Each role must have a unique `loco_role` identifier at the app level, a `display_name` for UI display, " +
     "and `loco_permission` which maps object slugs to permission sets. " +
     "Default permissions include: pick, read, assign, create, delete, update, and release. " +
-    "If objects are not present in the app, default roles will be created automatically.",
+    "If objects are not present in the app, default roles will be created automatically.\n\n" +
+    "⚠️ CRITICAL NEXT STEP: After creating roles successfully, you MUST immediately run PUBLISH_APP to deploy and activate the roles in the system. " +
+    "The roles will not be functional until the application is published. This is a mandatory step in the workflow sequence.",
 
   CREATE_UPDATE_ATTRIBUTE:
     "Step 2 in app creation workflow: Create custom attributes for objects in the application. " +
@@ -219,13 +225,18 @@ export const TOOL_DESCRIPTIONS = {
     "⚠️ Run after CREATE_SOT as the final step in app setup.\n\n" +
     "⚠️ PREREQUISITES:\n" +
     "1. All previous steps (1-9) must be completed successfully\n" +
-    // "2. CHECK_PUBLISH_STATUS must confirm publishing is complete\n" +/
     "2. GET_APP_CONTRACT must have been re-run after publishing to fetch updated contract\n\n" +
     "⚠️ AUTO-FETCH CONTRACT: If GET_APP_CONTRACT hasn't been run recently, it will be automatically executed first to fetch the complete app contract and understand object structure, status maps, and attribute configurations. " +
     "⚠️ OBJECT TYPE RESTRICTION: This tool ONLY works with 'task','workitem','master' and 'object' type objects.\n\n" +
     "Then generates realistic test data using the contract's object maps for status and priority values (loco_name). " +
     "Generates realistic test data for each attribute while respecting system attributes. " +
-    "⚠️ Note: System attributes (status, priority, Due Date, name, assignee) will be populated using appropriate values from the contract's object maps, falling back to default values if not defined.",
+    "⚠️ Note: System attributes (status, priority, Due Date, name, assignee) will be populated using appropriate values from the contract's object maps, falling back to default values if not defined.\n\n" +
+    "🔄 MANDATORY FOLLOW-UP STEPS: After successfully adding dummy data, you MUST complete the user management setup by running these tools in sequence:\n" +
+    "11. CREATE_NAVBAR - Creates role-based navigation bars for all application roles\n" +
+    "12. CREATE_JOB_TITLE - Creates job titles linked to roles and navbars for organizational structure\n" +
+    "13. CREATE_USER - Creates user accounts mapped to job titles and departments\n\n" +
+    "⚠️ COMPLETE WORKFLOW: The application setup is only complete after all these user management tools are executed. " +
+    "This ensures a fully functional application with proper user access, navigation, and organizational structure.",
 
   PUBLISH_APP:
     "Step 6 in app creation workflow: Publish an application using the app ID and base URL. " +
