@@ -420,26 +420,26 @@ export const generateWorkflows = async (
     let publishResult = null;
     let publishSuccess = false;
 
-    // If all workflows were generated successfully, automatically publish the app
-    if (successfulWorkflows > 0 && failedWorkflows === 0) {
-      try {
-        publishResult = await publishApp({
-          baseUrl: params.baseUrl,
-          appId: params.appId,
-          tenantName: params.tenantName,
-          version: contractResult.contract_json.version,
-        });
-        publishSuccess = true;
-      } catch (publishError) {
-        publishResult = {
-          error:
-            publishError instanceof Error
-              ? publishError.message
-              : "Unknown publish error",
-        };
-        publishSuccess = false;
-      }
-    }
+    // // If all workflows were generated successfully, automatically publish the app
+    // if (successfulWorkflows > 0 && failedWorkflows === 0) {
+    //   try {
+    //     publishResult = await publishApp({
+    //       baseUrl: params.baseUrl,
+    //       appId: params.appId,
+    //       tenantName: params.tenantName,
+    //       version: contractResult.contract_json.version,
+    //     });
+    //     publishSuccess = true;
+    //   } catch (publishError) {
+    //     publishResult = {
+    //       error:
+    //         publishError instanceof Error
+    //           ? publishError.message
+    //           : "Unknown publish error",
+    //     };
+    //     publishSuccess = false;
+    //   }
+    // }
 
     return {
       success: true,
