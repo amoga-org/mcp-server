@@ -695,8 +695,21 @@ export async function createUpdateRoles(
           });
         }
 
-        // Merge with existing permissions if role exists
-        if (existingRole) {
+        // Priority 1: Use provided loco_permission from the role (RBAC data)
+        if (role.loco_permission) {
+          Object.keys(role.loco_permission).forEach((slug) => {
+            cleanedLocoPermission[slug] = role.loco_permission![slug];
+          });
+        }
+
+        if (role.permission_level) {
+          Object.keys(role.permission_level).forEach((slug) => {
+            cleanedPermissionLevel[slug] = role.permission_level![slug];
+          });
+        }
+
+        // Priority 2: Merge with existing permissions if role exists and no RBAC provided
+        if (existingRole && !role.loco_permission) {
           Object.keys(existingRole.loco_permission || {}).forEach((key) => {
             const matchedObj =
               objectMap.get(key) || objectMap.get(key.toLowerCase());
@@ -716,10 +729,24 @@ export async function createUpdateRoles(
           });
         }
 
-        // Add missing permissions for all existing objects (add defaults where missing)
+        // Priority 3: Add missing permissions for objects not covered by RBAC or existing permissions
         objectSlugs.forEach((slug: string) => {
           if (!cleanedLocoPermission[slug]) {
-            cleanedLocoPermission[slug] = { ...defaultPermission };
+            // If RBAC was provided, use false defaults instead of full access
+            if (role.loco_permission) {
+              cleanedLocoPermission[slug] = {
+                pick: false,
+                read: false,
+                assign: false,
+                create: false,
+                delete: false,
+                update: false,
+                release: false,
+              };
+            } else {
+              // Legacy mode - use full access defaults
+              cleanedLocoPermission[slug] = { ...defaultPermission };
+            }
           }
           // Calculate permission level based on loco_permission if not set
           if (!cleanedPermissionLevel[slug]) {

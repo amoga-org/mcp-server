@@ -75,7 +75,7 @@ export async function createRoleV1(params: CreateRoleV1Params) {
       appId: params.appId,
     });
 
-    const existingObjects = appContract?.objects || [];
+    const existingObjects = appContract?.contract_json?.objects || [];
     let processedRoles: any[] = [];
     let mode = "";
 
@@ -102,7 +102,6 @@ export async function createRoleV1(params: CreateRoleV1Params) {
             );
 
             if (matchedObject) {
-
               locoPermission[matchedObject.slug] = permissions;
 
               // Calculate permission level
