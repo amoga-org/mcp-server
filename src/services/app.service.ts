@@ -92,7 +92,7 @@ function generateSlug(name: string): string {
 }
 
 // Helper function to create app payload
-function createAppPayload(appName: string): AppProps {
+function createAppPayload(appName: string, icon: any): AppProps {
   return {
     application_name: appName,
     application_props: {},
@@ -102,14 +102,16 @@ function createAppPayload(appName: string): AppProps {
     created_by: "",
     description: "",
     endpoint_setting: {},
-    icon: {
-      type: "material-icons-outlined",
-      name: "apps",
-      color: "#5f6368",
-      svg: "memo",
-      style: "solid",
-      version: 1,
-    },
+    icon: icon
+      ? icon
+      : {
+          type: "material-icons-outlined",
+          name: "apps",
+          color: "#5f6368",
+          svg: "memo",
+          style: "solid",
+          version: 1,
+        },
     slug: generateSlug(appName),
     state: "active",
     create_pages: true,
@@ -120,11 +122,11 @@ function createAppPayload(appName: string): AppProps {
 export async function createApp(
   params: CreateAppParams
 ): Promise<{ appId: string; appSlug: string }> {
-  const { tenantName, baseUrl, appName, amo_application_id } = params;
+  const { tenantName, baseUrl, appName, icon, amo_application_id } = params;
 
   try {
     const { token } = await getCrmToken(baseUrl, tenantName);
-    const payload = createAppPayload(appName);
+    const payload = createAppPayload(appName, icon);
 
     const createAppResponse = await fetch(
       `${baseUrl}/api/v1/core/studio/create/loco/application`,
