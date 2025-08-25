@@ -76,11 +76,6 @@ export async function createRoleV1(params: CreateRoleV1Params) {
     });
 
     const existingObjects = appContract?.objects || [];
-    console.log(
-      `Found ${existingObjects.length} objects in app contract:`,
-      existingObjects.map((obj: any) => `${obj.name} (${obj.slug})`)
-    );
-
     let processedRoles: any[] = [];
     let mode = "";
 
@@ -88,13 +83,10 @@ export async function createRoleV1(params: CreateRoleV1Params) {
     if (params.rolesData.rbac && params.rolesData.rbac.length > 0) {
       // RBAC Mode - Detailed permissions
       mode = "RBAC";
-      console.log("Processing RBAC mode with detailed permissions...");
 
       processedRoles = params.rolesData.rbac.map((rbacRole: RBACRole) => {
         const roleName = rbacRole.name;
         const roleSlug = roleName.toLowerCase().replace(/\s+/g, "_");
-
-        console.log(`Processing RBAC role: ${roleName}`);
 
         // Build loco_permission and permission_level for this role
         const locoPermission: Record<string, any> = {};
@@ -110,18 +102,12 @@ export async function createRoleV1(params: CreateRoleV1Params) {
             );
 
             if (matchedObject) {
-              console.log(
-                `  ✅ Mapped '${objectName}' to contract object '${matchedObject.slug}'`
-              );
+
               locoPermission[matchedObject.slug] = permissions;
 
               // Calculate permission level
               const permLevel = calculatePermissionLevel(permissions);
               permissionLevel[matchedObject.slug] = permLevel;
-            } else {
-              console.log(
-                `  ⚠️  Object '${objectName}' not found in contract - skipping`
-              );
             }
           }
         );
@@ -129,9 +115,7 @@ export async function createRoleV1(params: CreateRoleV1Params) {
         // Add default false permissions for contract objects not mentioned in RBAC
         existingObjects.forEach((contractObj: any) => {
           if (!locoPermission[contractObj.slug]) {
-            console.log(
-              `  ➕ Adding default false permissions for contract object '${contractObj.slug}'`
-            );
+
             locoPermission[contractObj.slug] = createDefaultPermissions();
             permissionLevel[contractObj.slug] = 10; // No access
           }
@@ -148,7 +132,7 @@ export async function createRoleV1(params: CreateRoleV1Params) {
     } else if (params.rolesData.roles && params.rolesData.roles.length > 0) {
       // Simple Mode - Full permissions (backward compatibility)
       mode = "Simple";
-      console.log("Processing Simple mode with full permissions...");
+
 
       processedRoles = params.rolesData.roles.map((role) => ({
         name: role.name,
@@ -159,8 +143,7 @@ export async function createRoleV1(params: CreateRoleV1Params) {
       throw new Error("No roles provided in either 'roles' or 'rbac' format");
     }
 
-    // Step 3: Create/update roles using the enhanced createUpdateRoles function
-    console.log(`Creating ${processedRoles.length} roles in ${mode} mode...`);
+
 
     await createUpdateRoles({
       tenantName: params.tenantName,
@@ -186,7 +169,7 @@ export async function createRoleV1(params: CreateRoleV1Params) {
       rbacSummary: rbacSummary,
     };
   } catch (error) {
-    console.error("Error in createRoleV1:", error);
+  
     return {
       success: false,
       message: `Failed to create roles: ${
