@@ -107,6 +107,7 @@ export interface CreateAppParams {
   baseUrl: string;
   appName: string;
   amo_application_id?: string;
+  icon?: any;
 }
 
 // Zod schema for create-app tool validation
