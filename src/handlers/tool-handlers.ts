@@ -47,7 +47,11 @@ import { createNavbar } from "../services/navbar.service.js";
 import { getAppPages } from "../services/app-pages.service.js";
 import { createJobTitle } from "../services/job-title.service.js";
 import { createUser } from "../services/create-user.service.js";
-import { CreateNavbarSchema } from "../types/app.types.js";
+import { createAppV1Handler } from "./app-v1-handler.js";
+import { createSOTV1Handler } from "./sot-v1-handler.js";
+import { createRoleV1Handler } from "./role-v1-handler.js";
+import { automationV1Handler } from "./automation-v1-handler.js";
+import { publishV1Handler } from "./publish-v1-handler.js";
 
 export const toolHandlers = {
   // Create a new application
@@ -920,4 +924,11 @@ ${pagesText}
       };
     }
   },
+
+  // V1 Functions - Simple and Direct
+  createAppV1: createAppV1Handler,
+  createSOTV1: createSOTV1Handler,
+  createRoleV1: createRoleV1Handler,
+  createAutomationV1: automationV1Handler,
+  publishV1: publishV1Handler,
 };

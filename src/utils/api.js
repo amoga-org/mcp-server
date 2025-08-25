@@ -1192,6 +1192,22 @@ export const createAppContract = async (
     );
   }
 
+  // Set parent field for task objects based on their relationships
+  finalObjects.forEach((obj) => {
+    if (
+      obj.type === "task" &&
+      obj.relationship &&
+      obj.relationship.length > 0
+    ) {
+      const workitemRelationship = obj.relationship.find(
+        (rel) => rel.relation_type === "manyToOne"
+      );
+      if (workitemRelationship) {
+        obj.parent = workitemRelationship.destination_object_slug;
+      }
+    }
+  });
+
   // 5. Save the contract with updated objects, preserved forms, and updated permissions
   const contractResponse = await fetch(
     `${baseUrl}/api/v1/core/studio/contract/app_meta/${appId}`,
@@ -1224,7 +1240,7 @@ export const createAppContract = async (
     }
   );
   const data = await contractResponse.json();
-  return data.data;
+  return { data: data.data, objects: finalObjects };
 };
 
 export const deleteObject = async (baseUrl, tenantName, appId, objectName) => {

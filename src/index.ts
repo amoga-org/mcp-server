@@ -35,6 +35,11 @@ import {
   CreateUserSchema,
 } from "./types/app.types.js";
 import { DummyDataSchema } from "./schemas/dummy-data-schema.js";
+import { CreateAppV1Schema } from "./schemas/app-v1-schema.js";
+import { CreateSOTV1Schema } from "./schemas/sot-v1-schema.js";
+import { CreateRoleV1Schema } from "./schemas/role-v1-schema.js";
+import { CreateAutomationV1Schema } from "./schemas/automation-v1-schema.js";
+import { PublishV1Schema } from "./schemas/publish-v1-schema.js";
 
 // Tool handlers
 import { toolHandlers } from "./handlers/tool-handlers.js";
@@ -125,6 +130,44 @@ const server = new McpServer({
       "create-user": {
         description: TOOL_DESCRIPTIONS.CREATE_USER,
         parameters: CreateUserSchema,
+      },
+      createAppV1: {
+        description:
+          "V1: Create application only - takes app details and creates app",
+        parameters: CreateAppV1Schema,
+      },
+      createSOTV1: {
+        description:
+          "V1: Create objects with attributes and SOT - processes masters and objects with SOT",
+        parameters: CreateSOTV1Schema,
+      },
+      createRoleV1: {
+        description:
+          "🔐 ADVANCED RBAC ROLE CREATOR: Create roles with intelligent contract-based permission mapping! " +
+          "Supports two modes: 1) Simple Mode - create roles with full permissions on all objects, " +
+          "2) RBAC Mode - define detailed permissions per role and object. In RBAC mode, the tool automatically: " +
+          "✨ Fetches your app contract to understand available objects ✨ Maps permission definitions to actual contract objects " +
+          "✨ Sets specified permissions for matched objects ✨ Adds default 'false' permissions for unmentioned contract objects " +
+          "✨ Skips objects not found in contract ✨ Provides detailed mapping analysis " +
+          "Perfect for complex permission structures with granular access control!",
+        parameters: CreateRoleV1Schema,
+      },
+      createAutomationV1: {
+        description:
+          "🚀 AI-POWERED AUTOMATION GENERATOR WITH CONTRACT ANALYSIS: Just describe what you want and AI creates complete working automation! " +
+          "This advanced tool automatically fetches your app contract, analyzes available objects and attributes, then generates complete Python automation code " +
+          "with proper trigger details, script code, error handling, and business logic. Simply provide a natural language description " +
+          "(e.g., 'When a task is created, send email to assignee and create follow-up reminder') and the AI will: " +
+          "✨ Analyze your app contract structure ✨ Generate trigger details based on available objects ✨ Create complete Python script code " +
+          "✨ Add contract-aware field mapping ✨ Include professional error handling ✨ Generate beautiful email templates " +
+          "✨ Add PDF generation and database operations ✨ Create working automation that saves via API. " +
+          "Two modes: 'description' (AI generates everything) or 'pseudo' (manual control). No programming knowledge required!",
+        parameters: CreateAutomationV1Schema,
+      },
+      publishV1: {
+        description:
+          "V1: Publish application - simple application publishing for V1 architecture",
+        parameters: PublishV1Schema,
       },
     },
   },
@@ -239,6 +282,52 @@ server.tool(
   CreateUserSchema.shape,
   toolHandlers["create-user"]
 );
+
+// V1 Tools - Simple and Direct
+server.tool(
+  "createAppV1",
+  "V1: Create application only - takes app details and creates app",
+  CreateAppV1Schema.shape,
+  toolHandlers["createAppV1"]
+);
+server.tool(
+  "createSOTV1",
+  "V1: Create objects with attributes and SOT - processes masters and objects with SOT",
+  CreateSOTV1Schema.shape,
+  toolHandlers["createSOTV1"]
+);
+server.tool(
+  "createRoleV1",
+  "🔐 ADVANCED RBAC ROLE CREATOR: Create roles with intelligent contract-based permission mapping! " +
+    "Supports two modes: 1) Simple Mode - create roles with full permissions on all objects, " +
+    "2) RBAC Mode - define detailed permissions per role and object. In RBAC mode, the tool automatically: " +
+    "✨ Fetches your app contract to understand available objects ✨ Maps permission definitions to actual contract objects " +
+    "✨ Sets specified permissions for matched objects ✨ Adds default 'false' permissions for unmentioned contract objects " +
+    "✨ Skips objects not found in contract ✨ Provides detailed mapping analysis " +
+    "Perfect for complex permission structures with granular access control!",
+  CreateRoleV1Schema.shape,
+  toolHandlers["createRoleV1"]
+);
+server.tool(
+  "createAutomationV1",
+  "🚀 AI-POWERED AUTOMATION GENERATOR WITH CONTRACT ANALYSIS: Just describe what you want and AI creates complete working automation! " +
+    "This advanced tool automatically fetches your app contract, analyzes available objects and attributes, then generates complete Python automation code " +
+    "with proper trigger details, script code, error handling, and business logic. Simply provide a natural language description " +
+    "(e.g., 'When a task is created, send email to assignee and create follow-up reminder') and the AI will: " +
+    "✨ Analyze your app contract structure ✨ Generate trigger details based on available objects ✨ Create complete Python script code " +
+    "✨ Add contract-aware field mapping ✨ Include professional error handling ✨ Generate beautiful email templates " +
+    "✨ Add PDF generation and database operations ✨ Create working automation that saves via API. " +
+    "Two modes: 'description' (AI generates everything) or 'pseudo' (manual control). No programming knowledge required!",
+  CreateAutomationV1Schema.shape,
+  toolHandlers["createAutomationV1"]
+);
+server.tool(
+  "publishV1",
+  "V1: Publish application - simple application publishing for V1 architecture",
+  PublishV1Schema.shape,
+  toolHandlers["publishV1"]
+);
+
 /**
  * Main function to start the MCP server
  */
