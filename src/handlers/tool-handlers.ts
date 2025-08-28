@@ -42,6 +42,7 @@ import {
   formatStatusOutput,
 } from "../services/publish-status.service.js";
 import { generateWorkflows } from "../services/workflow.service.js";
+import { generateWorkflowV1 } from "../services/workflow-v1.service.js";
 import { createAutomation } from "../services/automation.service.js";
 import { createNavbar } from "../services/navbar.service.js";
 import { getAppPages } from "../services/app-pages.service.js";
@@ -931,4 +932,73 @@ ${pagesText}
   createRoleV1: createRoleV1Handler,
   createAutomationV1: automationV1Handler,
   publishV1: publishV1Handler,
+  
+  // Generate workflow v1 with XML and business logic
+  "generate-workflow-v1": async (params: any) => {
+    try {
+      // Validate required parameters
+      if (!params.baseUrl || !params.appId || !params.tenantName || !params.caseName) {
+        throw new Error(
+          "Missing required parameters: baseUrl, appId, tenantName, and caseName are required"
+        );
+      }
+
+      if (!params.businessLogic && !params.xml) {
+        throw new Error(
+          "Either businessLogic or xml parameter is required"
+        );
+      }
+
+      const result = await generateWorkflowV1({
+        baseUrl: params.baseUrl,
+        appId: params.appId,
+        tenantName: params.tenantName,
+        caseName: params.caseName,
+        businessLogic: params.businessLogic,
+        xml: params.xml
+      });
+
+      if (result.success) {
+        const deploymentInfo = result.deploymentResult?.data?.appDefinition;
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `✅ Workflow v1 '${params.caseName}' generated and deployed successfully!\n\n` +
+                    `📋 Deployment Details:\n` +
+                    `- App Definition ID: ${deploymentInfo?.id || 'N/A'}\n` +
+                    `- App Definition Key: ${deploymentInfo?.key || 'N/A'}\n` +
+                    `- CMMN Model ID: ${deploymentInfo?.definition?.cmmnModels?.[0]?.id || 'N/A'}\n` +
+                    `- Tasks Count: ${params.businessLogic?.tasks?.length || 'N/A'}\n\n` +
+                    `🔧 Generated Features:\n` +
+                    `- Dynamic IDs based on app contract\n` +
+                    `- Business logic patterns implemented\n` +
+                    `- Outcome-to-status mappings\n` +
+                    `- Visual CMMN diagram layout\n` +
+                    `- Task listeners and sentries\n\n` +
+                    `📁 Configuration saved to application flows.`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `❌ Failed to generate workflow v1: ${result.error}`,
+            },
+          ],
+        };
+      }
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ Error generating workflow v1: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
 };

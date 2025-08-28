@@ -503,4 +503,95 @@ export const TOOL_DESCRIPTIONS = {
     "- Generated email addresses and access credentials\n" +
     "- Integration status with application roles and navbars\n\n" +
     "This tool completes the end-to-end user management setup by creating actual user accounts that are fully integrated with the application's organizational structure, roles, and navigation system.",
+
+  GENERATE_WORKFLOW_V1:
+    "🆕 Advanced workflow generator that creates CMMN workflows from business logic or custom XML, following the complete CMMN XML Generation Guide with dynamic IDs from app contract integration.\n\n" +
+    "**Key Features:**\n" +
+    "✅ Business Logic to CMMN XML Generation\n" +
+    "✅ Custom XML Input Support\n" +
+    "✅ Dynamic ID Generation from App Contract\n" +
+    "✅ Full CMMN Compliance with Flowable Extensions\n" +
+    "✅ Visual Diagram Layout Generation\n" +
+    "✅ Outcome-to-Status Mappings\n" +
+    "✅ Task Listeners and Sentries\n\n" +
+    "**Business Logic Patterns Supported:**\n" +
+    "- Sequential: Tasks execute in order (A → B → C → D)\n" +
+    "- Approval Chain: Multi-level approvals with reject/approve outcomes\n" +
+    "- Parallel: Multiple tasks execute simultaneously\n" +
+    "- Conditional: Tasks activate based on specific outcomes\n" +
+    "- Retry: Tasks can be repeated based on review feedback\n\n" +
+    "**Process Flow:**\n" +
+    "1. **App Contract Integration**: Automatically fetches app contract for dynamic ID generation\n" +
+    "2. **Case Validation**: Ensures caseName matches a workitem object slug\n" +
+    "3. **XML Generation**: Creates complete CMMN XML with:\n" +
+    "   • Dynamic IDs: caseName_applicationId, planItemAppSlugCaseName\n" +
+    "   • Visual Layout: Automatic task positioning and edge routing\n" +
+    "   • Sentries: Entry conditions with outcome-based triggers\n" +
+    "   • Task Listeners: SetVarriable (note double 'r') for status updates\n" +
+    "4. **Deployment**: Uploads to Flowable engine via multipart form\n" +
+    "5. **Configuration**: Saves workflow metadata to application\n\n" +
+    "**Input Options:**\n" +
+    "**Option 1 - Business Logic:**\n" +
+    "```json\n" +
+    "{\n" +
+    "  \"businessLogic\": {\n" +
+    "    \"tasks\": [\n" +
+    "      {\n" +
+    "        \"slug\": \"submit\",\n" +
+    "        \"displayName\": \"Submit Request\",\n" +
+    "        \"outcomes\": [\"submitted\", \"draft\"],\n" +
+    "        \"assignee\": \"${initiator}\"\n" +
+    "      },\n" +
+    "      {\n" +
+    "        \"slug\": \"approve\",\n" +
+    "        \"displayName\": \"Approve Request\",\n" +
+    "        \"outcomes\": [\"approved\", \"rejected\"],\n" +
+    "        \"candidateGroups\": \"managers\",\n" +
+    "        \"dueDate\": \"P2D\"\n" +
+    "      }\n" +
+    "    ],\n" +
+    "    \"patterns\": [{\n" +
+    "      \"type\": \"sequential\",\n" +
+    "      \"tasks\": [\"submit\", \"approve\"],\n" +
+    "      \"conditions\": [{\n" +
+    "        \"sourceTask\": \"submit\",\n" +
+    "        \"targetTask\": \"approve\",\n" +
+    "        \"outcome\": \"submitted\"\n" +
+    "      }]\n" +
+    "    }]\n" +
+    "  }\n" +
+    "}\n" +
+    "```\n\n" +
+    "**Option 2 - Custom XML:**\n" +
+    "```json\n" +
+    "{\n" +
+    "  \"xml\": \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>...\"\n" +
+    "}\n" +
+    "```\n\n" +
+    "**Prerequisites:**\n" +
+    "- Application must exist with published workitem objects\n" +
+    "- caseName must match a workitem.slug from app contract\n" +
+    "- App contract must be accessible (tool fetches automatically)\n\n" +
+    "**Generated XML Features:**\n" +
+    "- **Dynamic IDs**: Uses app contract for consistent naming\n" +
+    "- **Sentries**: Conditional entry points with outcome triggers\n" +
+    "- **Task Listeners**: Create, complete, and variable setting\n" +
+    "- **Visual Diagram**: Complete CMMNDI layout with positioned elements\n" +
+    "- **Flowable Integration**: TemporalListener, TriggerTemporalFlow, SetVarriable\n" +
+    "- **Form Integration**: Form keys and field validation\n" +
+    "- **Repetition Rules**: Task retry capabilities\n\n" +
+    "**Common Use Cases:**\n" +
+    "• **Vendor Selection**: Sequential approval workflow\n" +
+    "• **Invoice Processing**: Multi-level authorization\n" +
+    "• **Document Review**: Parallel review with final approval\n" +
+    "• **RFQ Process**: Complex conditional workflows\n" +
+    "• **Custom Processes**: Any CMMN-compliant workflow\n\n" +
+    "**Advantages over generate-workflow:**\n" +
+    "• Full control over business logic\n" +
+    "• Support for complex patterns\n" +
+    "• Custom XML input capability\n" +
+    "• Better visual layout algorithms\n" +
+    "• Enhanced outcome-status mappings\n" +
+    "• Complete CMMN standard compliance\n\n" +
+    "This tool provides enterprise-grade workflow generation with full flexibility for complex business processes while maintaining compatibility with the Flowable CMMN engine.",
 } as const;

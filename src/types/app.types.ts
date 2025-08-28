@@ -681,6 +681,104 @@ export interface GenerateWorkflowParams {
   }>;
 }
 
+// Workflow V1 Schema and Interfaces
+export const WorkflowV1TaskSchema = z.object({
+  slug: z.string().min(1).describe("Unique identifier for the task"),
+  displayName: z.string().min(1).describe("Human-readable name for the task"),
+  outcomes: z.array(z.string()).min(1).describe("Possible outcomes when the task completes"),
+  assignee: z.string().optional().describe("Specific user to assign task to (e.g., '${initiator}', 'john.doe')"),
+  candidateGroups: z.string().optional().describe("Group(s) that can claim this task (e.g., 'managers,reviewers')"),
+  dueDate: z.string().optional().describe("Due date in ISO duration format (e.g., 'P2D' for 2 days, 'P1W' for 1 week)"),
+  formKey: z.string().optional().describe("Form key for task UI (defaults to '{taskSlug}Form')"),
+  repetitionLimit: z.number().min(1).optional().describe("Maximum times this task can be repeated")
+});
+
+export const WorkflowV1ConditionSchema = z.object({
+  sourceTask: z.string().min(1).describe("Task that triggers this condition"),
+  targetTask: z.string().min(1).describe("Task that will be activated"),
+  outcome: z.string().min(1).describe("Required outcome from source task"),
+  operator: z.enum(["equals", "notEquals"]).default("equals").describe("Comparison operator")
+});
+
+export const WorkflowV1PatternSchema = z.object({
+  type: z.enum(["sequential", "approval-chain", "parallel", "conditional", "retry"])
+    .describe("Type of workflow pattern"),
+  tasks: z.array(z.string()).min(1).describe("List of task slugs involved in this pattern"),
+  conditions: z.array(WorkflowV1ConditionSchema).optional()
+    .describe("Conditions that control task activation (optional for some patterns)")
+});
+
+export const WorkflowV1BusinessLogicSchema = z.object({
+  tasks: z.array(WorkflowV1TaskSchema).min(1)
+    .describe("List of tasks in the workflow"),
+  patterns: z.array(WorkflowV1PatternSchema)
+    .describe("Business logic patterns that control workflow execution")
+});
+
+export const WorkflowV1ParamsSchema = z.object({
+  baseUrl: z.string().url().describe("Base URL of the API server"),
+  appId: z.string().min(1).describe("Application ID"),
+  tenantName: z.string().min(1).describe("Tenant name"),
+  caseName: z.string().min(1)
+    .describe("Case name (must match a workitem object slug from the app contract)"),
+  businessLogic: WorkflowV1BusinessLogicSchema.optional()
+    .describe("Business logic definition for generating CMMN XML"),
+  xml: z.string().optional()
+    .describe("Pre-generated CMMN XML (if provided, businessLogic will be ignored)")
+}).refine(
+  (data) => data.businessLogic || data.xml,
+  {
+    message: "Either businessLogic or xml parameter must be provided",
+    path: ["businessLogic", "xml"]
+  }
+);
+
+export interface WorkflowV1TaskDefinition {
+  slug: string;
+  displayName: string;
+  outcomes: string[];
+  assignee?: string;
+  candidateGroups?: string;
+  dueDate?: string;
+  formKey?: string;
+  repetitionLimit?: number;
+}
+
+export interface WorkflowV1ConditionDefinition {
+  sourceTask: string;
+  targetTask: string;
+  outcome: string;
+  operator?: 'equals' | 'notEquals';
+}
+
+export interface WorkflowV1BusinessPattern {
+  type: 'sequential' | 'approval-chain' | 'parallel' | 'conditional' | 'retry';
+  tasks: string[];
+  conditions?: WorkflowV1ConditionDefinition[];
+}
+
+export interface WorkflowV1BusinessLogic {
+  tasks: WorkflowV1TaskDefinition[];
+  patterns: WorkflowV1BusinessPattern[];
+}
+
+export interface WorkflowV1Params {
+  baseUrl: string;
+  appId: string;
+  tenantName: string;
+  caseName: string;
+  businessLogic?: WorkflowV1BusinessLogic;
+  xml?: string;
+}
+
+export interface WorkflowV1Response {
+  success: boolean;
+  cmmnXml?: string;
+  deploymentResult?: any;
+  configurationResult?: any;
+  error?: string;
+}
+
 // Create Automation Schema and Interface
 const CreateAutomationBaseSchema = z.object({
   baseUrl: z.string().url().describe("The base URL of the backend system"),

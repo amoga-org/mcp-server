@@ -66,7 +66,6 @@ function createDefaultPermissions(): Permission {
 
 export async function createRoleV1(params: CreateRoleV1Params) {
   try {
-    console.log("Starting RBAC role creation with contract analysis...");
 
     // Step 1: Get app contract to see existing objects
     const appContract = await getAppContract({
@@ -168,7 +167,7 @@ export async function createRoleV1(params: CreateRoleV1Params) {
       rbacSummary: rbacSummary,
     };
   } catch (error) {
-  
+
     return {
       success: false,
       message: `Failed to create roles: ${

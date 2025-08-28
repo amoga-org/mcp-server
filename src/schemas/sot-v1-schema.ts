@@ -49,7 +49,15 @@ export const CreateSOTV1Schema = z.object({
           "segment",
         ]),
         interact_with_workflow: z.boolean().optional(),
-        status_values: z.array(z.string()).optional(),
+        status_values: z.union([
+          z.array(z.string()),
+          z.array(z.object({
+            amo_name: z.enum(["todo", "inProgress", "completed", "onHold", "inCompleted", "reopen"])
+              .describe("AMO system name for the status - must be one of the predefined values"),
+            name: z.string().describe("Display name for the status"),
+            color: z.string().describe("Color for the status (hex code like #FF0000)")
+          }))
+        ]).optional().describe("Status values - can be array of strings or objects with amo_name (restricted list), name, and color"),
         priority_values: z.array(z.string()).optional(),
         attributes: z.array(
           z.object({

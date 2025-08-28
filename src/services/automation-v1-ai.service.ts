@@ -83,7 +83,6 @@ async function analyzeAppContract(
   params: GetAppContractParams
 ): Promise<ContractAnalysis> {
   try {
-    console.log("Fetching app contract for analysis...");
     const contract = await getAppContract(params);
 
     if (!contract) {
@@ -182,16 +181,8 @@ async function analyzeAppContract(
     // Aggregate all attributes
     analysis.attributes = analysis.objects.flatMap((obj) => obj.attributes);
 
-    console.log("Contract analysis completed:", {
-      objectsCount: analysis.objects.length,
-      triggersCount: analysis.availableTriggers.length,
-      relationshipsCount: analysis.relationships.length,
-      attributesCount: analysis.attributes.length,
-    });
-
     return analysis;
   } catch (error) {
-    console.error("Failed to analyze app contract:", error);
     throw new Error(
       `Contract analysis failed: ${
         error instanceof Error ? error.message : String(error)
@@ -1683,7 +1674,6 @@ function generateAutomationFlowData(script: string): any {
   try {
     encodedScript = btoa(encodeURIComponent(script));
   } catch (encodeError) {
-    console.error("Script encoding error:", encodeError);
     encodedScript = btoa(script);
   }
 
@@ -1776,16 +1766,11 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
   try {
     const results = [];
 
-    console.log("Starting AI automation creation with contract analysis...");
-    console.log("Getting authentication token...");
-
     let token;
     try {
       const tokenResult = await getCrmToken(params.baseUrl, params.tenantName);
       token = tokenResult.token;
-      console.log("Authentication token obtained successfully");
     } catch (tokenError) {
-      console.error("Failed to get authentication token:", tokenError);
       throw new Error(
         `Authentication failed: ${
           tokenError instanceof Error ? tokenError.message : String(tokenError)
@@ -1794,7 +1779,7 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
     }
 
     // Step 1: Analyze app contract
-    console.log("Analyzing application contract...");
+
     let contractAnalysis: ContractAnalysis | undefined;
     try {
       contractAnalysis = await analyzeAppContract({
@@ -1802,36 +1787,15 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
         tenantName: params.tenantName,
         appId: params.appId,
       });
-      console.log("Contract analysis completed successfully");
-      console.log(
-        "Available objects:",
-        contractAnalysis.objects.map((obj) => obj.slug).join(", ")
-      );
-      console.log(
-        "Available triggers:",
-        contractAnalysis.availableTriggers.length
-      );
     } catch (contractError) {
-      console.warn(
-        "Contract analysis failed, proceeding without contract data:",
-        contractError
-      );
       // Continue without contract analysis - the system will fall back to generic behavior
     }
 
-    console.log(
-      "Total automations to process:",
-      params.automationsData.automations.length
-    );
-
     // Process each automation with AI enhancement and contract awareness
     for (const automation of params.automationsData.automations) {
-      console.log("Processing AI automation:", automation.name);
-
       try {
         // Parse the trigger with validation
         const triggerInfo = parseTrigger(automation.trigger, automation.filter);
-        console.log("AI Trigger parsed - Type:", triggerInfo.triggerType);
 
         // Enhanced trigger validation with contract data
         if (contractAnalysis) {
@@ -1859,14 +1823,9 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
 
         // Generate AI-Enhanced Python script with contract data
         const script = generateAIEnhancedScript(automation, contractAnalysis);
-        console.log("AI script generated - Length:", script.length);
 
         // Generate flow data with corrected structure
         const flowData = generateAutomationFlowData(script);
-        console.log(
-          "AI Flow data created - Nodes:",
-          flowData.flow_nodes.length
-        );
 
         // Generate trigger details with validation
         const triggerDetails = generateTriggerDetails(
@@ -1897,13 +1856,6 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
           trigger_details: triggerDetails,
         };
 
-        console.log("AI Automation payload prepared for:", automation.name);
-        console.log(
-          "Payload size:",
-          JSON.stringify(automationPayload).length,
-          "bytes"
-        );
-
         // Create the AI automation with better error handling
         const response = await fetch(
           `${params.baseUrl}/api/v1/core/automation/flows`,
@@ -1918,14 +1870,10 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
           }
         );
 
-        console.log("AI API response status:", response.status);
-
         // Get response text first
         const responseText = await response.text();
-        console.log("Raw AI API response length:", responseText.length);
 
         if (!response.ok) {
-          console.error("AI API Error Response:", responseText);
           throw new Error(
             `AI HTTP error! status: ${response.status}, message: ${
               responseText || "No error message"
@@ -1938,19 +1886,12 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
         try {
           if (responseText.trim()) {
             result = JSON.parse(responseText);
-            console.log("AI result parsed successfully");
           } else {
-            console.log("Empty response body, considering as success");
             result = { id: "created_successfully", success: true };
           }
         } catch (parseError) {
-          console.error("AI JSON parse error:", parseError);
-
           // If creation was successful but response parsing failed, still consider it success
           if (response.status >= 200 && response.status < 300) {
-            console.log(
-              "HTTP status indicates success, treating as successful creation"
-            );
             result = { id: "created_with_parse_error", success: true };
           } else {
             throw new Error(
@@ -1971,8 +1912,6 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
           result?.automation_id ||
           `created_${Date.now()}`;
 
-        console.log("Extracted automation ID:", automationId);
-
         results.push({
           automation: automation.name,
           status: "success",
@@ -1985,16 +1924,9 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
             contractAnalysis?.objects.map((obj) => obj.slug) || [],
           response: result,
         });
-
-        console.log("Successfully processed automation:", automation.name);
       } catch (error) {
-        console.error("Error creating AI automation:", automation.name);
-        console.error("Error details:", error);
-
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        console.error("Error message:", errorMessage);
-
         results.push({
           automation: automation.name,
           status: "error",
@@ -2008,10 +1940,6 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
 
     const successCount = results.filter((r) => r.status === "success").length;
     const errorCount = results.filter((r) => r.status === "error").length;
-
-    console.log("AI Automation process completed");
-    console.log("Successful:", successCount);
-    console.log("Failed:", errorCount);
 
     // Return success if any automation was created successfully
     const overallSuccess = successCount > 0;
@@ -2037,9 +1965,7 @@ export async function createAutomationV1(params: CreateAutomationV1Params) {
       totalProcessed: params.automationsData.automations.length,
     };
   } catch (error) {
-    console.error("Critical error in createAutomationV1:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Critical error message:", errorMessage);
 
     return {
       success: false,
@@ -2071,14 +1997,7 @@ function validateTriggerAgainstContract(
       const availableObjects = contractAnalysis.objects
         .map((obj) => obj.slug)
         .join(", ");
-      console.warn(
-        `Automation '${automationName}': Object '${triggerInfo.objectSlug}' not found in contract. ` +
-          `Available objects: ${availableObjects}`
-      );
     } else {
-      console.log(
-        `Automation '${automationName}': Trigger object '${triggerInfo.objectSlug}' validated against contract`
-      );
     }
   }
 }

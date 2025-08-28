@@ -327,13 +327,31 @@ function convertObject(obj: any): any {
   // Convert attributes
   const attributes = obj.attributes?.map(convertAttribute) || [];
 
-  // Convert status values
-  const status =
-    obj.status_values?.map((statusValue: string, index: number) => ({
-      name: statusValue,
-      color: getStatusColor(index),
-      amo_name: mapToAmoStatus(statusValue),
-    })) || [];
+  // Convert status values - handle both string array and object array formats
+  const status = obj.status_values?.map((statusValue: any, index: number) => {
+    if (typeof statusValue === 'string') {
+      // Old format: array of strings
+      return {
+        name: statusValue,
+        color: getStatusColor(index),
+        amo_name: mapToAmoStatus(statusValue),
+      };
+    } else if (typeof statusValue === 'object' && statusValue.amo_name && statusValue.name) {
+      // New format: array of objects with amo_name, name, and color
+      return {
+        name: statusValue.name, // This is the display_name
+        color: statusValue.color, // Use the user-provided color
+        amo_name: statusValue.amo_name, // Use the provided amo_name
+      };
+    } else {
+      // Fallback for malformed data
+      return {
+        name: String(statusValue),
+        color: getStatusColor(index),
+        amo_name: mapToAmoStatus(String(statusValue)),
+      };
+    }
+  }) || [];
 
   // Convert relationships
   const relationship =
@@ -356,7 +374,7 @@ function convertObject(obj: any): any {
 function getStatusColor(index: number): string {
   const colors = [
     "#94A3B8",
-    "#3B82F6",
+    "#3B82F6", 
     "#F59E0B",
     "#10B981",
     "#EF4444",

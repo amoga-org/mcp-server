@@ -27,6 +27,7 @@ import {
   PublishAppSchema,
   CheckPublishStatusSchema,
   GenerateWorkflowSchema,
+  WorkflowV1ParamsSchema,
   CreateAutomationSchema,
   CreateAutomationBaseSchema,
   CreateNavbarSchema,
@@ -111,6 +112,10 @@ const server = new McpServer({
         description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
         parameters: GenerateWorkflowSchema,
       },
+      "generate-workflow-v1": {
+        description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW_V1,
+        parameters: WorkflowV1ParamsSchema,
+      },
       "create-automation": {
         description: TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
         parameters: CreateAutomationSchema,
@@ -138,7 +143,10 @@ const server = new McpServer({
       },
       createSOTV1: {
         description:
-          "V1: Create objects with attributes and SOT - processes masters and objects with SOT",
+          "🆕 V1: Create objects with attributes and SOT - Enhanced with custom color support! " +
+          "Processes masters and objects with SOT, supports custom status_values with restricted amo_name values. " +
+          "Features: ✅ User-defined colors ✅ Restricted amo_name values (todo, inProgress, completed, onHold, inCompleted, reopen) " +
+          "✅ Custom display names and colors ✅ Backward compatibility with string arrays",
         parameters: CreateSOTV1Schema,
       },
       createRoleV1: {
@@ -253,6 +261,12 @@ server.tool(
   toolHandlers["generate-workflow"]
 );
 server.tool(
+  "generate-workflow-v1",
+  TOOL_DESCRIPTIONS.GENERATE_WORKFLOW_V1,
+  WorkflowV1ParamsSchema._def.schema.shape,
+  toolHandlers["generate-workflow-v1"]
+);
+server.tool(
   "create-automation",
   TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
   CreateAutomationBaseSchema.shape,
@@ -292,7 +306,9 @@ server.tool(
 );
 server.tool(
   "createSOTV1",
-  "V1: Create objects with attributes and SOT - processes masters and objects with SOT",
+  "🆕 V1: Create objects with attributes and SOT - Enhanced with custom color support! " +
+  "Processes masters and objects with SOT, supports custom status_values with restricted amo_name values. " +
+  "Features: ✅ User-defined colors ✅ Restricted amo_name (todo, inProgress, completed, onHold, inCompleted, reopen) ✅ Backward compatibility",
   CreateSOTV1Schema.shape,
   toolHandlers["createSOTV1"]
 );
