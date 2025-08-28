@@ -259,6 +259,7 @@ server.tool(
 //   TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
 //   GenerateWorkflowSchema.shape,
 //   toolHandlers["generate-workflow"]
+// );
 server.tool(
   "generate-workflow-v1",
   TOOL_DESCRIPTIONS.GENERATE_WORKFLOW_V1,
