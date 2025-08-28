@@ -94,7 +94,7 @@ const handleUsePageTemplate = async (baseUrl, token, pageData) => {
 };
 
 export const getCrmToken = async (baseUrl, tenantName) => {
-  let apikey = process.env.MCP_API_KEY;
+  let apikey = process.env.AMOGA_API_KEY;
   if (!apikey) {
     throw new Error("API Key is required in configuration");
   }

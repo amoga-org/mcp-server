@@ -55,7 +55,7 @@ export async function getCrmToken(
   baseUrl: string,
   tenantName: string
 ): Promise<{ token: string; coreApp: any }> {
-  const apikey = process.env.MCP_API_KEY;
+  const apikey = process.env.AMOGA_API_KEY;
   if (!apikey) {
     throw new Error("API Key is required in configuration");
   }

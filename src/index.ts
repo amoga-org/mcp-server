@@ -48,8 +48,8 @@ import { toolHandlers } from "./handlers/tool-handlers.js";
 // Environment configuration
 dotenv.config();
 
-if (!process.env.MCP_API_KEY) {
-  console.error("MCP_API_KEY environment variable is not set");
+if (!process.env.AMOGA_API_KEY) {
+  console.error("AMOGA_API_KEY environment variable is not set");
   process.exit(1);
 }
 

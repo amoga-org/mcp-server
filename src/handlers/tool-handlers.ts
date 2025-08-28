@@ -771,12 +771,12 @@ ${pagesText}
 - **Base URL:** ${params.baseUrl}
 - **Tenant Name:** ${params.tenantName}
 - **App ID:** ${params.appId || "Not specified"}
-- **API Key Set:** ${process.env.MCP_API_KEY ? "Yes" : "No"}
+- **API Key Set:** ${process.env.AMOGA_API_KEY ? "Yes" : "No"}
 
 **Troubleshooting:**
 - Verify that the base URL is correct and accessible
 - Check that the tenant name exists
-- Ensure the API key (MCP_API_KEY) is valid
+- Ensure the API key (AMOGA_API_KEY) is valid
 - Confirm the API endpoint is available
 - Check tenant permissions for page access`,
             },
@@ -932,7 +932,7 @@ ${pagesText}
   createRoleV1: createRoleV1Handler,
   createAutomationV1: automationV1Handler,
   publishV1: publishV1Handler,
-  
+
   // Generate workflow v1 with XML and business logic
   "generate-workflow-v1": async (params: any) => {
     try {
