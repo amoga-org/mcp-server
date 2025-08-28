@@ -60,10 +60,10 @@ const server = new McpServer({
   capabilities: {
     resources: SERVER_CAPABILITIES.resources,
     tools: {
-      "create-app": {
-        description: TOOL_DESCRIPTIONS.CREATE_APP,
-        parameters: CreateAppSchema,
-      },
+    //   "create-app": {
+    //     description: TOOL_DESCRIPTIONS.CREATE_APP,
+    //     parameters: CreateAppSchema,
+    //   },
       "get-apps": {
         description: TOOL_DESCRIPTIONS.GET_APPS,
         parameters: GetAppsSchema,
@@ -76,50 +76,50 @@ const server = new McpServer({
         description: TOOL_DESCRIPTIONS.GET_APP_CONTRACT,
         parameters: GetAppContractSchema,
       },
-      "create-object": {
-        description: TOOL_DESCRIPTIONS.CREATE_OBJECT,
-        parameters: CreateObjectSchema,
-      },
-      "create-sot": {
-        description: TOOL_DESCRIPTIONS.CREATE_SOT,
-        parameters: CreateSotSchema,
-      },
+    //   "create-object": {
+    //     description: TOOL_DESCRIPTIONS.CREATE_OBJECT,
+    //     parameters: CreateObjectSchema,
+    //   },
+    //   "create-sot": {
+    //     description: TOOL_DESCRIPTIONS.CREATE_SOT,
+    //     parameters: CreateSotSchema,
+    //   },
       "delete-object": {
         description: TOOL_DESCRIPTIONS.DELETE_OBJECT,
         parameters: DeleteObjectSchema,
       },
-      "create-update-roles": {
-        description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ROLES,
-        parameters: CreateUpdateRolesSchema,
-      },
-      "create-attributes": {
-        description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
-        parameters: CreateAttributeSchema,
-      },
+    //   "create-update-roles": {
+    //     description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ROLES,
+    //     parameters: CreateUpdateRolesSchema,
+    //   },
+    //   "create-attributes": {
+    //     description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
+    //     parameters: CreateAttributeSchema,
+    //   },
       "add-dummy-data": {
         description: TOOL_DESCRIPTIONS.ADD_DUMMY_DATA,
         parameters: DummyDataSchema,
       },
-      "publish-app": {
-        description: TOOL_DESCRIPTIONS.PUBLISH_APP,
-        parameters: PublishAppSchema,
-      },
+    //   "publish-app": {
+    //     description: TOOL_DESCRIPTIONS.PUBLISH_APP,
+    //     parameters: PublishAppSchema,
+    //   },
       "check-publish-status": {
         description: TOOL_DESCRIPTIONS.CHECK_PUBLISH_STATUS,
         parameters: CheckPublishStatusSchema,
       },
-      "generate-workflow": {
-        description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
-        parameters: GenerateWorkflowSchema,
-      },
+    //   "generate-workflow": {
+    //     description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
+    //     parameters: GenerateWorkflowSchema,
+    //   },
       "generate-workflow-v1": {
         description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW_V1,
         parameters: WorkflowV1ParamsSchema,
       },
-      "create-automation": {
-        description: TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
-        parameters: CreateAutomationSchema,
-      },
+    //   "create-automation": {
+    //     description: TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
+    //     parameters: CreateAutomationSchema,
+    //   },
       "create-navbar": {
         description: TOOL_DESCRIPTIONS.CREATE_NAVBAR,
         parameters: CreateNavbarSchema,
@@ -182,12 +182,12 @@ const server = new McpServer({
 });
 
 // Register tool handlers
-server.tool(
-  "create-app",
-  TOOL_DESCRIPTIONS.CREATE_APP,
-  CreateAppSchema.shape,
-  toolHandlers["create-app"]
-);
+// server.tool(
+//   "create-app",
+//   TOOL_DESCRIPTIONS.CREATE_APP,
+//   CreateAppSchema.shape,
+//   toolHandlers["create-app"]
+// );
 server.tool(
   "get-apps",
   TOOL_DESCRIPTIONS.GET_APPS,
@@ -206,30 +206,30 @@ server.tool(
   GetAppContractSchema.shape,
   toolHandlers["get-app-contract"]
 );
-server.tool(
-  "create-object",
-  TOOL_DESCRIPTIONS.CREATE_OBJECT,
-  CreateObjectSchema.shape,
-  toolHandlers["create-object"]
-);
-server.tool(
-  "create-sot",
-  TOOL_DESCRIPTIONS.CREATE_SOT,
-  CreateSotSchema.shape,
-  toolHandlers["create-sot"]
-);
+// server.tool(
+//   "create-object",
+//   TOOL_DESCRIPTIONS.CREATE_OBJECT,
+//   CreateObjectSchema.shape,
+//   toolHandlers["create-object"]
+// );
+// server.tool(
+//   "create-sot",
+//   TOOL_DESCRIPTIONS.CREATE_SOT,
+//   CreateSotSchema.shape,
+//   toolHandlers["create-sot"]
+// );
 server.tool(
   "delete-object",
   TOOL_DESCRIPTIONS.DELETE_OBJECT,
   DeleteObjectSchema.shape,
   toolHandlers["delete-object"]
 );
-server.tool(
-  "create-update-roles",
-  TOOL_DESCRIPTIONS.CREATE_UPDATE_ROLES,
-  CreateUpdateRolesSchema.shape,
-  toolHandlers["create-update-roles"]
-);
+// server.tool(
+//   "create-update-roles",
+//   TOOL_DESCRIPTIONS.CREATE_UPDATE_ROLES,
+//   CreateUpdateRolesSchema.shape,
+//   toolHandlers["create-update-roles"]
+// );
 server.tool(
   "create-attributes",
   TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
@@ -242,36 +242,35 @@ server.tool(
   DummyDataSchema.shape,
   toolHandlers["add-dummy-data"]
 );
-server.tool(
-  "publish-app",
-  TOOL_DESCRIPTIONS.PUBLISH_APP,
-  PublishAppSchema.shape,
-  toolHandlers["publish-app"]
-);
+// server.tool(
+//   "publish-app",
+//   TOOL_DESCRIPTIONS.PUBLISH_APP,
+//   PublishAppSchema.shape,
+//   toolHandlers["publish-app"]
+// );
 server.tool(
   "check-publish-status",
   TOOL_DESCRIPTIONS.CHECK_PUBLISH_STATUS,
   CheckPublishStatusSchema.shape,
   toolHandlers["check-publish-status"]
 );
-server.tool(
-  "generate-workflow",
-  TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
-  GenerateWorkflowSchema.shape,
-  toolHandlers["generate-workflow"]
-);
+// server.tool(
+//   "generate-workflow",
+//   TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
+//   GenerateWorkflowSchema.shape,
+//   toolHandlers["generate-workflow"]
 server.tool(
   "generate-workflow-v1",
   TOOL_DESCRIPTIONS.GENERATE_WORKFLOW_V1,
   WorkflowV1ParamsSchema._def.schema.shape,
   toolHandlers["generate-workflow-v1"]
 );
-server.tool(
-  "create-automation",
-  TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
-  CreateAutomationBaseSchema.shape,
-  toolHandlers["create-automation"]
-);
+// server.tool(
+//   "create-automation",
+//   TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
+//   CreateAutomationBaseSchema.shape,
+//   toolHandlers["create-automation"]
+// );
 server.tool(
   "get-app-pages",
   TOOL_DESCRIPTIONS.GET_APP_PAGES,
