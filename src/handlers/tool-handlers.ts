@@ -5,6 +5,10 @@
 
 import { z } from "zod";
 import {
+  validateBaseUrl,
+  BLOCKED_DOMAIN_RESPONSE,
+} from "../utils/validation.js";
+import {
   createApp,
   getAllApps,
   deleteApp,
@@ -54,6 +58,42 @@ import { createRoleV1Handler } from "./role-v1-handler.js";
 import { automationV1Handler } from "./automation-v1-handler.js";
 import { publishV1Handler } from "./publish-v1-handler.js";
 
+/**
+ * Helper function to validate baseUrl for any params object
+ * @param params - Tool parameters that may contain baseUrl
+ * @returns true if validation passes, throws error otherwise
+ */
+function validateToolParams(params: any): void {
+  // Check if params has a baseUrl field
+  if (params && typeof params === "object" && "baseUrl" in params) {
+    validateBaseUrl(params.baseUrl);
+  }
+}
+
+/**
+ * Wrapper function to add baseUrl validation to any handler
+ * @param handler - The original handler function
+ * @returns Wrapped handler with validation
+ */
+function withBaseUrlValidation<T extends Record<string, any>>(
+  handler: (params: T) => Promise<any>
+) {
+  return async (params: T) => {
+    try {
+      // Validate baseUrl before executing the handler
+      validateToolParams(params);
+      return await handler(params);
+    } catch (err: any) {
+      // Check if it's a blocked domain error
+      if (err.message?.includes("Access denied")) {
+        return BLOCKED_DOMAIN_RESPONSE;
+      }
+      // Re-throw other errors to be handled by the original handler
+      throw err;
+    }
+  };
+}
+
 export const toolHandlers = {
   // Create a new application
   "create-app": async (params: CreateAppParams) => {
@@ -80,7 +120,7 @@ export const toolHandlers = {
   },
 
   // Get all applications for a tenant
-  "get-apps": async (params: GetAppsParams) => {
+  "get-apps": withBaseUrlValidation(async (params: GetAppsParams) => {
     try {
       const apps = await getAllApps(params);
       return {
@@ -89,7 +129,11 @@ export const toolHandlers = {
             type: "text" as const,
             text:
               `✅ Found ${apps.length} applications:\n` +
-              apps.map((a: any) => `- ${a.application_name}`).join("\n"),
+              apps
+                .map(
+                  (a: any) => `- name:${a.application_name}, appid:${a.uuid}`
+                )
+                .join("\n"),
           },
         ],
       };
@@ -103,7 +147,7 @@ export const toolHandlers = {
         ],
       };
     }
-  },
+  }),
 
   // Delete an application
   "delete-app": async (params: DeleteAppParams) => {
@@ -927,26 +971,29 @@ ${pagesText}
   },
 
   // V1 Functions - Simple and Direct
-  createAppV1: createAppV1Handler,
-  createSOTV1: createSOTV1Handler,
-  createRoleV1: createRoleV1Handler,
-  createAutomationV1: automationV1Handler,
-  publishV1: publishV1Handler,
+  createAppV1: withBaseUrlValidation(createAppV1Handler),
+  createSOTV1: withBaseUrlValidation(createSOTV1Handler),
+  createRoleV1: withBaseUrlValidation(createRoleV1Handler),
+  createAutomationV1: withBaseUrlValidation(automationV1Handler),
+  publishV1: withBaseUrlValidation(publishV1Handler),
 
   // Generate workflow v1 with XML and business logic
   "generate-workflow-v1": async (params: any) => {
     try {
       // Validate required parameters
-      if (!params.baseUrl || !params.appId || !params.tenantName || !params.caseName) {
+      if (
+        !params.baseUrl ||
+        !params.appId ||
+        !params.tenantName ||
+        !params.caseName
+      ) {
         throw new Error(
           "Missing required parameters: baseUrl, appId, tenantName, and caseName are required"
         );
       }
 
       if (!params.businessLogic && !params.xml) {
-        throw new Error(
-          "Either businessLogic or xml parameter is required"
-        );
+        throw new Error("Either businessLogic or xml parameter is required");
       }
 
       const result = await generateWorkflowV1({
@@ -955,7 +1002,7 @@ ${pagesText}
         tenantName: params.tenantName,
         caseName: params.caseName,
         businessLogic: params.businessLogic,
-        xml: params.xml
+        xml: params.xml,
       });
 
       if (result.success) {
@@ -964,19 +1011,24 @@ ${pagesText}
           content: [
             {
               type: "text" as const,
-              text: `✅ Workflow v1 '${params.caseName}' generated and deployed successfully!\n\n` +
-                    `📋 Deployment Details:\n` +
-                    `- App Definition ID: ${deploymentInfo?.id || 'N/A'}\n` +
-                    `- App Definition Key: ${deploymentInfo?.key || 'N/A'}\n` +
-                    `- CMMN Model ID: ${deploymentInfo?.definition?.cmmnModels?.[0]?.id || 'N/A'}\n` +
-                    `- Tasks Count: ${params.businessLogic?.tasks?.length || 'N/A'}\n\n` +
-                    `🔧 Generated Features:\n` +
-                    `- Dynamic IDs based on app contract\n` +
-                    `- Business logic patterns implemented\n` +
-                    `- Outcome-to-status mappings\n` +
-                    `- Visual CMMN diagram layout\n` +
-                    `- Task listeners and sentries\n\n` +
-                    `📁 Configuration saved to application flows.`,
+              text:
+                `✅ Workflow v1 '${params.caseName}' generated and deployed successfully!\n\n` +
+                `📋 Deployment Details:\n` +
+                `- App Definition ID: ${deploymentInfo?.id || "N/A"}\n` +
+                `- App Definition Key: ${deploymentInfo?.key || "N/A"}\n` +
+                `- CMMN Model ID: ${
+                  deploymentInfo?.definition?.cmmnModels?.[0]?.id || "N/A"
+                }\n` +
+                `- Tasks Count: ${
+                  params.businessLogic?.tasks?.length || "N/A"
+                }\n\n` +
+                `🔧 Generated Features:\n` +
+                `- Dynamic IDs based on app contract\n` +
+                `- Business logic patterns implemented\n` +
+                `- Outcome-to-status mappings\n` +
+                `- Visual CMMN diagram layout\n` +
+                `- Task listeners and sentries\n\n` +
+                `📁 Configuration saved to application flows.`,
             },
           ],
         };
