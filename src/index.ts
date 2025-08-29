@@ -41,6 +41,7 @@ import { CreateSOTV1Schema } from "./schemas/sot-v1-schema.js";
 import { CreateRoleV1Schema } from "./schemas/role-v1-schema.js";
 import { CreateAutomationV1Schema } from "./schemas/automation-v1-schema.js";
 import { PublishV1Schema } from "./schemas/publish-v1-schema.js";
+import { CreatePagesV1Schema } from "./schemas/pages-v1-schema.js";
 
 // Tool handlers
 import { toolHandlers } from "./handlers/tool-handlers.js";
@@ -176,6 +177,16 @@ const server = new McpServer({
         description:
           "V1: Publish application - simple application publishing for V1 architecture",
         parameters: PublishV1Schema,
+      },
+      createPagesV1: {
+        description:
+          "🎨 SMART PAGE CREATOR WITH AI LAYOUT: Create multiple pages with widgets in one go! " +
+          "Just provide page definitions with names, roles, types (index is a dashboard/record), and widgets. " +
+          "Features: ✨ Smart widget positioning with AI layout optimization ✨ Automatic grid calculation " +
+          "✨ Support for all widget types (Table, Header, JSON Form, Comments, Progress bar, Notes, Activity, Attachment) " +
+          "✨ Role-based access configuration ✨ Index pages for lists and Record pages for details " +
+          "✨ Pre-configured widget properties and styling. Perfect for quickly setting up admin interfaces!",
+        parameters: CreatePagesV1Schema,
       },
     },
   },
@@ -342,6 +353,17 @@ server.tool(
   "V1: Publish application - simple application publishing for V1 architecture",
   PublishV1Schema.shape,
   toolHandlers["publishV1"]
+);
+server.tool(
+  "createPagesV1",
+  "🎨 SMART PAGE CREATOR WITH AI LAYOUT: Create multiple pages with widgets in one go! " +
+    "Just provide page definitions with names, roles, types (dashboard/record), and widgets. " +
+    "Features: ✨ Smart widget positioning with AI layout optimization ✨ Automatic grid calculation " +
+    "✨ Support for all widget types (Table, Header, JSON Form, Comments, Progress bar, Notes, Activity, Attachment) " +
+    "✨ Role-based access configuration ✨ Index pages for lists and Record pages for details " +
+    "✨ Pre-configured widget properties and styling. Perfect for quickly setting up admin interfaces!",
+  CreatePagesV1Schema.shape,
+  toolHandlers["createPagesV1"]
 );
 
 /**

@@ -57,6 +57,7 @@ import { createSOTV1Handler } from "./sot-v1-handler.js";
 import { createRoleV1Handler } from "./role-v1-handler.js";
 import { automationV1Handler } from "./automation-v1-handler.js";
 import { publishV1Handler } from "./publish-v1-handler.js";
+import { createPagesV1Handler } from "./pages-v1-handler.js";
 
 /**
  * Helper function to validate baseUrl for any params object
@@ -976,6 +977,7 @@ ${pagesText}
   createRoleV1: withBaseUrlValidation(createRoleV1Handler),
   createAutomationV1: withBaseUrlValidation(automationV1Handler),
   publishV1: withBaseUrlValidation(publishV1Handler),
+  createPagesV1: withBaseUrlValidation(createPagesV1Handler),
 
   // Generate workflow v1 with XML and business logic
   "generate-workflow-v1": async (params: any) => {
