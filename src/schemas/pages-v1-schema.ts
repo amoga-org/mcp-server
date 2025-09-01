@@ -104,7 +104,7 @@ export const CreatePagesV1Schema = z.object({
   pages: z
     .array(PageDefinitionSchema)
     .describe(
-      "Array of page definitions. AI should calculate widget heights based on type and object type (1 grid unit = 14px): header(Object/Master: h=15, Workitem/Task: h=9), comment(h=23), activity(Object/Master: h=42, Workitem/Task: h=22), tabs(Object/Master: h=42, Workitem/Task: h=20), table(h=43), note(h=15), taskIframe(h=16), stats(h=3). Format: [{name: 'Store Dashboard', type: 'dashboard', objectSlug: 'store', widgets: [{type: 'header', grid_props: {h: 15, i: 'uuid', w: 8, x: 0, y: 0}}]}]"
+      "Array of page definitions. AI should calculate widget heights based on type and respect minimum heights (1 grid unit = 14px). Widget minimum heights from config: note(minH:10), activity(minH:20), attachment(minH:20), button(minH:2), calendar(minH:25), carousel(minH:18), chart(minH:4), comment(minH:15), container(minH:1), conversation(minH:10), dropdown(minH:4), file_preview(minH:10), header(minH:6), html_parser(minH:2), iframe(minH:4), json(minH:27), jsonform(minH:4), leaderboard(minH:2), list(minH:5), map(minH:2), page(minH:10), path(minH:4), progressbar(minH:1), qrScanner(minH:2), richTextEditor(minH:15), spacer(minH:1), stats(minH:4), table(minH:25), tabs(minH:10), ticker(minH:2). Format: [{name: 'Dashboard', type: 'dashboard', objectSlug: 'store', widgets: [{type: 'header', grid_props: {h: 15, i: 'uuid', w: 8, x: 0, y: 0}}]}]"
     ),
 });
 
