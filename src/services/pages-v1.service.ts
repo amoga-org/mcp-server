@@ -143,60 +143,21 @@ function getWidgetConfig(widgetTypeName: string): any {
   return widgetConfig;
 }
 
-/**
- * Calculate grid position for widgets to avoid overlap
- */
-function calculateGridPosition(widgets: any[], index: number): { x: number; y: number } {
-  if (index === 0) return { x: 0, y: 0 };
-
-  // Get the last widget's position and dimensions
-  const lastWidget = widgets[index - 1];
-  const lastConfig = lastWidget.configs.grid_props;
-  
-  // Try to place widgets side by side if there's room
-  const nextX = lastConfig.x + lastConfig.w;
-  if (nextX <= 12) {
-    return { x: nextX, y: lastConfig.y };
-  }
-  
-  // Otherwise place below the tallest widget in the current row
-  let maxY = 0;
-  for (let i = 0; i < index; i++) {
-    const widget = widgets[i];
-    const config = widget.configs.grid_props;
-    const widgetBottom = config.y + config.h;
-    if (widgetBottom > maxY) {
-      maxY = widgetBottom;
-    }
-  }
-  
-  return { x: 0, y: maxY };
-}
 
 /**
- * Generate widget configuration based on widget type or detailed config
+ * Generate widget configuration from AI-provided widget data
+ * Similar to create-sot's approach
  */
 function generateWidget(
-  widgetConfig: string | any,
+  widgetConfig: any,  // Always an object with type and grid_props from AI
   objectSlug?: string,
-  position?: { x: number; y: number },
-  pageGridProps?: any,
   contractObjects?: any[]
 ): any {
-  let widgetType: string;
-  let customGridProps: any = {};
-  let customProps: any = {};
-  let widgetObjectSlug = objectSlug;
-
-  // Handle both string and object widget configurations
-  if (typeof widgetConfig === 'string') {
-    widgetType = widgetConfig;
-  } else {
-    widgetType = widgetConfig.type;
-    customGridProps = widgetConfig.grid_props || {};
-    customProps = widgetConfig.props || {};
-    widgetObjectSlug = widgetConfig.objectSlug || objectSlug;
-  }
+  // Extract widget configuration from AI params
+  const widgetType = widgetConfig.type;
+  const aiGridProps = widgetConfig.grid_props || {};
+  const customProps = widgetConfig.props || {};
+  const widgetObjectSlug = widgetConfig.objectSlug || objectSlug;
 
   const baseConfig = getWidgetConfig(widgetType);
   const widgetId = uuidv4();
@@ -309,41 +270,29 @@ function generateWidget(
     }
   }
   
-  // Create the widget structure matching SOT implementation
+  // Create widget structure matching create-sot implementation
   const widget = {
     configs: {
       ...enhancedConfigs,
       grid_props: {
+        // Merge AI-provided grid_props with widget defaults (like create-sot line 471-474)
+        ...aiGridProps,
         ...enhancedConfigs.grid_props,
-        // Add required layout properties  
-        w: enhancedConfigs.grid_props.maxW || 12,
-        h: enhancedConfigs.grid_props.minH || 10,
+        // AI should provide these required values
+        x: aiGridProps.x || 0,
+        y: aiGridProps.y || 0,
+        w: aiGridProps.w || 12,
+        h: aiGridProps.h || 10,
+        // Add unique identifier
         i: widgetId,
-        moved: false,
-        static: false,
-        isResizable: true,
-        ...(position || { x: 0, y: 0 }),
-        // Apply page-level grid_props
-        ...(pageGridProps || {}),
-        // Apply widget-specific grid_props (highest priority)
-        ...customGridProps,
+        // Standard properties from AI or defaults
+        moved: aiGridProps.moved || false,
+        static: aiGridProps.static || false,
+        isResizable: aiGridProps.isResizable !== false,
       },
     },
     ...rest, // Include other properties from base config
     id: widgetId,
-  };
-
-  // Set appropriate default dimensions based on widget type (only if not overridden)
-  const widgetTypeKey = widgetType.toLowerCase();
-  if (widgetTypeKey === "table" && !customGridProps.w && !customGridProps.h) {
-    widget.configs.grid_props.w = 12;
-    widget.configs.grid_props.h = 48;
-  } else if (widgetTypeKey === "header" && !customGridProps.w && !customGridProps.h) {
-    widget.configs.grid_props.w = 12;
-    widget.configs.grid_props.h = 8;
-  } else if (widgetTypeKey === "jsonform" && !customGridProps.w && !customGridProps.h) {
-    widget.configs.grid_props.w = 8;
-    widget.configs.grid_props.h = 36;
   }
 
   return widget;
@@ -371,37 +320,33 @@ export async function createPagesV1(params: CreatePagesV1Params): Promise<any> {
 
     for (const pageDefinition of params.pages) {
       try {
-        // Generate widgets with smart positioning
+        // Generate widgets exactly like create-sot
         const widgets: any[] = [];
         
-        pageDefinition.widgets.forEach((widgetConfig, index) => {
-          const position = params.useAILayout 
-            ? calculateGridPosition(widgets, index)
-            : { x: 0, y: index * 10 };
-            
-          const widget = generateWidget(
-            widgetConfig,
-            pageDefinition.objectSlug,
-            position,
-            pageDefinition.grid_props,
-            contractObjects
-          );
-          widgets.push(widget);
-        });
+        // Process each widget with AI-provided grid_props
+        if (pageDefinition.widgets && Array.isArray(pageDefinition.widgets)) {
+          pageDefinition.widgets.forEach((widgetConfig) => {
+            const widget = generateWidget(
+              widgetConfig,
+              pageDefinition.objectSlug,
+              contractObjects
+            );
+            widgets.push(widget);
+          });
+        }
 
-        // Page type is already correct from schema (dashboard or record)
-        const pageType = pageDefinition.type;
+        // Page type comes directly from pageDefinition
 
-        // Create the page data structure similar to createSotData approach
+        // Create page data exactly like create-sot (line 481-490)
         const pageData = {
           application_id: params.appId,
           display_name: pageDefinition.name,
-          mode: pageDefinition.mode || "view", 
+          mode: "view", // Fixed mode like create-sot
           name: pageDefinition.name,
           object_slug: pageDefinition.objectSlug || "",
-          show_header: pageDefinition.show_header !== false,
-          type: pageType,
-          widgets: widgets, // Include widgets in the page data
+          show_header: true, // Fixed like create-sot
+          type: pageDefinition.type,
+          widgets: widgets,
         };
 
         // Use the same approach as handleUsePageTemplate
@@ -410,9 +355,9 @@ export async function createPagesV1(params: CreatePagesV1Params): Promise<any> {
         createdPages.push({
           name: pageDefinition.name,
           pageId: "created", // We don't get the ID back but we know it was created
-          type: pageType,
+          type: pageDefinition.type,
           widgetCount: widgets.length,
-          role: pageDefinition.role || "All",
+          objectSlug: pageDefinition.objectSlug || "",
         });
       } catch (error) {
         errors.push({

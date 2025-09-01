@@ -35,9 +35,9 @@ export async function createPagesV1Handler(params: CreatePagesV1Params) {
       
       responseText += `\n🎯 **Features Implemented:**\n`;
       responseText += `• Smart widget positioning with AI layout optimization\n`;
-      responseText += `• Automatic grid calculation to prevent overlap\n`;
-      responseText += `• Role-based page access configuration\n`;
-      responseText += `• Support for index (list) and record (detail) page types\n`;
+      responseText += `• Height calculation based on widget type and object type (1 grid unit = 14px)\n`;
+      responseText += `• Object-aware widget sizing (header: Object/Master h=15, Workitem/Task h=9)\n`;
+      responseText += `• Support for dashboard (index) and record (detail) page types\n`;
       responseText += `• Pre-configured widget properties and styling\n`;
       
       return {
