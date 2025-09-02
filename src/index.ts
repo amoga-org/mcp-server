@@ -359,9 +359,7 @@ server.tool(
   "🎨 SMART PAGE CREATOR WITH AI LAYOUT: Create multiple pages with widgets in one go! " +
     "Just provide page definitions with names, roles, types (dashboard/record), and widgets. " +
     "Features: ✨ Smart widget positioning with AI layout optimization ✨ Automatic grid calculation " +
-    "✨ Support for all widget types (Table, Header, JSON Form, Comments, Progress bar, Notes, Activity, Attachment) " +
-    "✨ Role-based access configuration ✨ Index pages for lists and Record pages for details " +
-    "✨ Pre-configured widget properties and styling. Perfect for quickly setting up admin interfaces!",
+    "✨ Support for all widget types (Table, Header, JSON Form, Comments, Progress bar, Notes, Activity, Attachment) ",
   CreatePagesV1Schema.shape,
   toolHandlers["createPagesV1"]
 );

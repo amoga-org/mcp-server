@@ -69,6 +69,7 @@ const WidgetTypeSchema = z.enum([
 const WidgetSchema = z.object({
   type: WidgetTypeSchema.describe("Type of widget"),
   grid_props: WidgetGridPropsSchema.describe("Grid properties for the widget"),
+  props: z.record(z.any()).describe("Additional properties for the widget"),
 });
 
 /**
