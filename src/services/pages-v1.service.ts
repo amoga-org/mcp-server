@@ -83,7 +83,7 @@ function getWidgetConfig(widgetTypeName: string): any {
   const nameMapping: Record<string, string> = {
     // Direct mappings for schema widget names
     "note": "note",
-    "activity": "activity", 
+    "activity": "activity",
     "attachment": "attachment",
     "button": "button",
     "calendar": "calendar",
@@ -95,7 +95,7 @@ function getWidgetConfig(widgetTypeName: string): any {
     "dropdown": "dropdown",
     "file_preview": "file_preview",
     "header": "header",
-    "html_parser": "html_parser", 
+    "html_parser": "html_parser",
     "iframe": "iframe",
     "json": "json",
     "jsonform": "jsonform",
@@ -116,7 +116,7 @@ function getWidgetConfig(widgetTypeName: string): any {
 
     // Legacy/friendly name mappings
     "Table": "table",
-    "Header": "header", 
+    "Header": "header",
     "JSON Form": "jsonform",
     "Comments": "comment",
     "Progress bar": "progressbar",
@@ -133,13 +133,13 @@ function getWidgetConfig(widgetTypeName: string): any {
 
   const widgetKey = nameMapping[widgetTypeName] || widgetTypeName.toLowerCase();
   const widgetConfig = widgets[widgetKey as keyof typeof widgets];
-  
+
   if (!widgetConfig) {
     // Fallback to a basic container if widget not found
     console.warn(`Widget type "${widgetTypeName}" not found, using container as fallback`);
     return widgets.container;
   }
-  
+
   return widgetConfig;
 }
 
@@ -161,13 +161,13 @@ function generateWidget(
 
   const baseConfig = getWidgetConfig(widgetType);
   const widgetId = uuidv4();
-  
+
   // Use the same pattern as createSotData: destructure configs and rest
   const { configs, ...rest } = baseConfig;
-  
+
   // Enhanced config with custom properties
   let enhancedConfigs = { ...configs };
-  
+
   // Apply custom props to enhanced config
   if (Object.keys(customProps).length > 0) {
     enhancedConfigs.props = {
@@ -234,7 +234,7 @@ function generateWidget(
             pinned: false,
           },
           {
-            key: "updated_at", 
+            key: "updated_at",
             hide: false,
             parentKey: targetObject.slug,
             parentDisplayName: targetObject.name,
@@ -269,7 +269,7 @@ function generateWidget(
       }
     }
   }
-  
+
   // Create widget structure matching create-sot implementation
   const widget = {
     configs: {
@@ -286,9 +286,9 @@ function generateWidget(
         // Add unique identifier
         i: widgetId,
         // Standard properties from AI or defaults
-        moved: aiGridProps.moved || false,
-        static: aiGridProps.static || false,
-        isResizable: aiGridProps.isResizable !== false,
+        // moved: aiGridProps.moved || false,
+        // static: aiGridProps.static || false,
+        // isResizable: aiGridProps.isResizable !== false,
       },
     },
     ...rest, // Include other properties from base config
@@ -304,7 +304,7 @@ function generateWidget(
 export async function createPagesV1(params: CreatePagesV1Params): Promise<any> {
   try {
     const { token } = await getCrmToken(params.baseUrl, params.tenantName);
-    
+
     // Get app contract to understand objects
     const appContract = await getAppContract({
       baseUrl: params.baseUrl,
@@ -322,7 +322,7 @@ export async function createPagesV1(params: CreatePagesV1Params): Promise<any> {
       try {
         // Generate widgets exactly like create-sot
         const widgets: any[] = [];
-        
+
         // Process each widget with AI-provided grid_props
         if (pageDefinition.widgets && Array.isArray(pageDefinition.widgets)) {
           pageDefinition.widgets.forEach((widgetConfig) => {
@@ -351,7 +351,7 @@ export async function createPagesV1(params: CreatePagesV1Params): Promise<any> {
 
         // Use the same approach as handleUsePageTemplate
         await handleUsePageTemplate(params.baseUrl, token, pageData);
-        
+
         createdPages.push({
           name: pageDefinition.name,
           pageId: "created", // We don't get the ID back but we know it was created
