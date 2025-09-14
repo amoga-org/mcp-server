@@ -42,6 +42,9 @@ export interface AttributePayload {
   is_auditable: boolean;
   attribute_meta: AttributeMetadata;
   is_global: boolean;
+  is_default: boolean;
+  is_internal: boolean;
+  related_objects_configuration: any[];
 }
 
 export interface ComponentType {

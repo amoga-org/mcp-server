@@ -504,6 +504,101 @@ export const TOOL_DESCRIPTIONS = {
     "- Integration status with application roles and navbars\n\n" +
     "This tool completes the end-to-end user management setup by creating actual user accounts that are fully integrated with the application's organizational structure, roles, and navigation system.",
 
+  CREATE_ATTRIBUTE_V2:
+    "🚀 ADVANCED ATTRIBUTE CREATION/UPDATE V2: Create or update attributes with enhanced type-specific metadata and validation. " +
+    "This tool provides structured attribute creation/updating with precise control over data types, component types, and metadata. " +
+    "If an attribute exists with matching (key OR display_name) AND data_type, it will be UPDATED instead of creating a duplicate. " +
+    "This allows you to update display_name of existing attributes.\n\n" +
+    "📊 DATA TYPE & COMPONENT MAPPING:\n" +
+    "• **text**: string, text, uuid, password, email, comment, instruction, title, Container, richText\n" +
+    "• **enumeration**: enumeration, status, priority, multiselect\n" +
+    "• **user**: assignee\n" +
+    "• **number**: integer, biginteger, float\n" +
+    "• **boolean**: toggle, checkbox\n" +
+    "• **date**: Supports absolute, relative, and calculative dates\n" +
+    "• **media, map, segment, related_field**: Specialized types\n\n" +
+    "📅 DATE METADATA OPTIONS:\n" +
+    "**Absolute Date:**\n" +
+    "• Format: dd/MM/yyyy, MM/dd/yyyy, dd MMM yyyy\n" +
+    "• Include time with 12/24 hour format\n\n" +
+    "**Relative Date:**\n" +
+    "• Relative to created time or EOD time\n" +
+    "• Automatic timestamp calculations\n\n" +
+    "**Calculative Date:**\n" +
+    "• Subtraction between two date attributes\n" +
+    "• Example: Age = Current Date - Birth Date\n\n" +
+    "💰 NUMBER FORMATTING:\n" +
+    "• Abbreviation support (1K, 1M)\n" +
+    "• Thousands separator\n" +
+    "• Currency symbols: ₹, $, €, ¥, £, etc.\n" +
+    "• Decimal places: 1.0 to 5.00000\n\n" +
+    "✅ VALIDATION PRESETS:\n" +
+    "• **PAN Card**: Indian PAN validation\n" +
+    "• **Aadhar**: 12-digit Aadhar number\n" +
+    "• **Vehicle**: Indian vehicle number\n" +
+    "• **Mobile**: 10-digit mobile number\n" +
+    "• **Email**: Email format validation\n" +
+    "• **URL**: Valid URL format\n" +
+    "• **Alphanumeric**: Both letters and numbers\n" +
+    "• **Custom**: Define your own regex pattern\n\n" +
+    "🎯 ADVANCED FEATURES:\n" +
+    "• **Formula Fields**: Calculate values based on other attributes\n" +
+    "• **Autocorrection**: Auto-complete from related objects\n" +
+    "• **Encryption**: Secure sensitive data\n" +
+    "• **Audit Trail**: Track changes to attributes\n" +
+    "• **Search Indexing**: Make attributes searchable\n\n" +
+    "📝 EXAMPLE USAGE:\n" +
+    "```json\n" +
+    "{\n" +
+    '  "attributes": [\n' +
+    "    {\n" +
+    '      "display_name": "PAN Number",\n' +
+    '      "key": "pan_number",\n' +
+    '      "data_type": "text",\n' +
+    '      "component_type": "text",\n' +
+    '      "component_subtype": "string",\n' +
+    '      "is_required": true,\n' +
+    '      "is_encrypted": true,\n' +
+    '      "attribute_meta": {\n' +
+    '        "is_validation": true,\n' +
+    '        "validation_suggestion": "pancard"\n' +
+    "      }\n" +
+    "    },\n" +
+    "    {\n" +
+    '      "display_name": "Priority Level",\n' +
+    '      "key": "priority_level",\n' +
+    '      "data_type": "enumeration",\n' +
+    '      "component_type": "enumeration",\n' +
+    '      "component_subtype": "enumeration",\n' +
+    '      "attribute_meta": {\n' +
+    '        "is_color": true,\n' +
+    '        "options": [\n' +
+    "          {\n" +
+    '            "slug": "high",\n' +
+    '            "display_name": "High Priority",\n' +
+    '            "color": "#FF5733",\n' +
+    '            "rank": 0\n' +
+    "          },\n" +
+    "          {\n" +
+    '            "slug": "medium",\n' +
+    '            "display_name": "Medium Priority",\n' +
+    '            "color": "#FFA500",\n' +
+    '            "rank": 1\n' +
+    "          },\n" +
+    "          {\n" +
+    '            "slug": "low",\n' +
+    '            "display_name": "Low Priority",\n' +
+    '            "color": "#80BF8B",\n' +
+    '            "rank": 2\n' +
+    "          }\n" +
+    "        ]\n" +
+    "      }\n" +
+    "    }\n" +
+    "  ]\n" +
+    "}\n" +
+    "```\n\n" +
+    "This V2 tool ensures type safety and provides comprehensive metadata support for all attribute types.",
+
   GENERATE_WORKFLOW_V1:
     "🆕 Advanced workflow generator that creates CMMN workflows from business logic or custom XML, following the complete CMMN XML Generation Guide with dynamic IDs from app contract integration.\n\n" +
     "**Key Features:**\n" +
@@ -534,29 +629,29 @@ export const TOOL_DESCRIPTIONS = {
     "**Option 1 - Business Logic:**\n" +
     "```json\n" +
     "{\n" +
-    "  \"businessLogic\": {\n" +
-    "    \"tasks\": [\n" +
+    '  "businessLogic": {\n' +
+    '    "tasks": [\n' +
     "      {\n" +
-    "        \"slug\": \"submit\",\n" +
-    "        \"displayName\": \"Submit Request\",\n" +
-    "        \"outcomes\": [\"submitted\", \"draft\"],\n" +
-    "        \"assignee\": \"${initiator}\"\n" +
+    '        "slug": "submit",\n' +
+    '        "displayName": "Submit Request",\n' +
+    '        "outcomes": ["submitted", "draft"],\n' +
+    '        "assignee": "${initiator}"\n' +
     "      },\n" +
     "      {\n" +
-    "        \"slug\": \"approve\",\n" +
-    "        \"displayName\": \"Approve Request\",\n" +
-    "        \"outcomes\": [\"approved\", \"rejected\"],\n" +
-    "        \"candidateGroups\": \"managers\",\n" +
-    "        \"dueDate\": \"P2D\"\n" +
+    '        "slug": "approve",\n' +
+    '        "displayName": "Approve Request",\n' +
+    '        "outcomes": ["approved", "rejected"],\n' +
+    '        "candidateGroups": "managers",\n' +
+    '        "dueDate": "P2D"\n' +
     "      }\n" +
     "    ],\n" +
-    "    \"patterns\": [{\n" +
-    "      \"type\": \"sequential\",\n" +
-    "      \"tasks\": [\"submit\", \"approve\"],\n" +
-    "      \"conditions\": [{\n" +
-    "        \"sourceTask\": \"submit\",\n" +
-    "        \"targetTask\": \"approve\",\n" +
-    "        \"outcome\": \"submitted\"\n" +
+    '    "patterns": [{\n' +
+    '      "type": "sequential",\n' +
+    '      "tasks": ["submit", "approve"],\n' +
+    '      "conditions": [{\n' +
+    '        "sourceTask": "submit",\n' +
+    '        "targetTask": "approve",\n' +
+    '        "outcome": "submitted"\n' +
     "      }]\n" +
     "    }]\n" +
     "  }\n" +
@@ -565,7 +660,7 @@ export const TOOL_DESCRIPTIONS = {
     "**Option 2 - Custom XML:**\n" +
     "```json\n" +
     "{\n" +
-    "  \"xml\": \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?>...\"\n" +
+    '  "xml": "<?xml version=\\"1.0\\" encoding=\\"UTF-8\\"?>..."\n' +
     "}\n" +
     "```\n\n" +
     "**Prerequisites:**\n" +

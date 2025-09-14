@@ -39,6 +39,7 @@ import {
   CreateUserParams,
 } from "../types/app.types.js";
 import { createAttributeHandler } from "./attribute-handler.js";
+import { createAttributeV2Handler } from "./attribute-v2-handler.js";
 import { createDummyDataHandler } from "./dummy-data-handler.js";
 import { DummyDataSchema } from "../schemas/dummy-data-schema.js";
 import {
@@ -978,6 +979,41 @@ ${pagesText}
   createAutomationV1: withBaseUrlValidation(automationV1Handler),
   publishV1: withBaseUrlValidation(publishV1Handler),
   createPagesV1: withBaseUrlValidation(createPagesV1Handler),
+
+  // V2 Enhanced Attribute Creation
+  "create-attributeV2": async (params: any) => {
+    try {
+      const result = await createAttributeV2Handler.handler(params);
+      if (result.success) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `✅ Successfully created ${result.created?.length || 0} V2 attributes:\n\n${JSON.stringify(result, null, 2)}`,
+            },
+          ],
+        };
+      } else {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `❌ Failed to create V2 attributes: ${result.error}`,
+            },
+          ],
+        };
+      }
+    } catch (err: any) {
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `❌ Failed to create V2 attributes: ${err.message || err}`,
+          },
+        ],
+      };
+    }
+  },
 
   // Generate workflow v1 with XML and business logic
   "generate-workflow-v1": async (params: any) => {

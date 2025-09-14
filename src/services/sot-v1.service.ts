@@ -143,12 +143,13 @@ const validateAttributes = (
 async function createMissingAttributes(
   baseUrl: string,
   tenantName: string,
-  attributes: any[]
+  attributes: any[],
+  appId?: string
 ): Promise<void> {
   if (attributes.length === 0) return;
 
   const { token } = await getCrmToken(baseUrl, tenantName);
-  const allAvailableAttributes = await getAttributes(baseUrl, token);
+  const allAvailableAttributes = await getAttributes(baseUrl, token, appId || "");
 
   // Filter attributes that don't exist at tenant level
   const attributesToCreate = attributes.filter((attr) => {
@@ -274,6 +275,8 @@ async function createMissingAttributes(
         is_auditable: attr.auditable || false,
         attribute_meta: attributeMeta,
         is_global: false,
+        is_default: false,
+        is_internal: false,
         related_objects_configuration: [],
       };
     }
@@ -285,35 +288,35 @@ async function createMissingAttributes(
 
 // Convert user attribute to MCP format
 function convertAttribute(attr: any): any {
-  let componentType = "text";
+//   let componentType = "text";
 
-  // Map user types to MCP types
-  if (attr.type.includes("text")) {
-    componentType = "text";
-  } else if (attr.type.includes("number")) {
-    componentType = "number";
-  } else if (attr.type.includes("date")) {
-    componentType = "date";
-  } else if (attr.type.includes("enumeration")) {
-    componentType = "enumeration";
-  } else if (attr.type.includes("boolean")) {
-    componentType = "boolean";
-  } else if (attr.type.includes("user")) {
-    componentType = "user";
-  } else if (attr.type.includes("relation")) {
-    componentType = "related_field";
-  } else if (attr.type.includes("media")) {
-    componentType = "media";
-  }
+//   // Map user types to MCP types
+//   if (attr.type.includes("text")) {
+//     componentType = "text";
+//   } else if (attr.type.includes("number")) {
+//     componentType = "number";
+//   } else if (attr.type.includes("date")) {
+//     componentType = "date";
+//   } else if (attr.type.includes("enumeration")) {
+//     componentType = "enumeration";
+//   } else if (attr.type.includes("boolean")) {
+//     componentType = "boolean";
+//   } else if (attr.type.includes("user")) {
+//     componentType = "user";
+//   } else if (attr.type.includes("relation")) {
+//     componentType = "related_field";
+//   } else if (attr.type.includes("media")) {
+//     componentType = "media";
+//   }
 
   return {
+    ...attr,
     display_name: attr.key
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (l: string) => l.toUpperCase()),
-    component_type: componentType,
-    ...(attr.required && { required: true }),
-    ...(attr.unique && { unique: true }),
-    ...(attr.values && { enum_values: attr.values }),
+
+    // component_type: componentType,
+    // ...(attr.required && { required: true }),
+    // ...(attr.unique && { unique: true }),
+    // ...(attr.values && { enum_values: attr.values }),
   };
 }
 
@@ -328,30 +331,35 @@ function convertObject(obj: any): any {
   const attributes = obj.attributes?.map(convertAttribute) || [];
 
   // Convert status values - handle both string array and object array formats
-  const status = obj.status_values?.map((statusValue: any, index: number) => {
-    if (typeof statusValue === 'string') {
-      // Old format: array of strings
-      return {
-        name: statusValue,
-        color: getStatusColor(index),
-        amo_name: mapToAmoStatus(statusValue),
-      };
-    } else if (typeof statusValue === 'object' && statusValue.amo_name && statusValue.name) {
-      // New format: array of objects with amo_name, name, and color
-      return {
-        name: statusValue.name, // This is the display_name
-        color: statusValue.color, // Use the user-provided color
-        amo_name: statusValue.amo_name, // Use the provided amo_name
-      };
-    } else {
-      // Fallback for malformed data
-      return {
-        name: String(statusValue),
-        color: getStatusColor(index),
-        amo_name: mapToAmoStatus(String(statusValue)),
-      };
-    }
-  }) || [];
+  const status =
+    obj.status_values?.map((statusValue: any, index: number) => {
+      if (typeof statusValue === "string") {
+        // Old format: array of strings
+        return {
+          name: statusValue,
+          color: getStatusColor(index),
+          amo_name: mapToAmoStatus(statusValue),
+        };
+      } else if (
+        typeof statusValue === "object" &&
+        statusValue.amo_name &&
+        statusValue.name
+      ) {
+        // New format: array of objects with amo_name, name, and color
+        return {
+          name: statusValue.name, // This is the display_name
+          color: statusValue.color, // Use the user-provided color
+          amo_name: statusValue.amo_name, // Use the provided amo_name
+        };
+      } else {
+        // Fallback for malformed data
+        return {
+          name: String(statusValue),
+          color: getStatusColor(index),
+          amo_name: mapToAmoStatus(String(statusValue)),
+        };
+      }
+    }) || [];
 
   // Convert relationships
   const relationship =
@@ -374,7 +382,7 @@ function convertObject(obj: any): any {
 function getStatusColor(index: number): string {
   const colors = [
     "#94A3B8",
-    "#3B82F6", 
+    "#3B82F6",
     "#F59E0B",
     "#10B981",
     "#EF4444",
@@ -493,20 +501,21 @@ export async function createSOTV1(params: CreateSOTV1Params) {
       }
     });
 
-    // Step 2: Validate and create missing attributes
-    if (allAttributes.length > 0) {
-      await createMissingAttributes(
-        params.baseUrl,
-        params.tenantName,
-        allAttributes
-      );
-      results.push({
-        step: "validate_create_attributes",
-        status: "success",
-        message: `Validated and created ${allAttributes.length} attributes at tenant level`,
-        count: allAttributes.length,
-      });
-    }
+    // // Step 2: Validate and create missing attributes
+    // if (allAttributes.length > 0) {
+    //   await createMissingAttributes(
+    //     params.baseUrl,
+    //     params.tenantName,
+    //     allAttributes,
+    //     params.appId
+    //   );
+    //   results.push({
+    //     step: "validate_create_attributes",
+    //     status: "success",
+    //     message: `Validated and created ${allAttributes.length} attributes at tenant level`,
+    //     count: allAttributes.length,
+    //   });
+    // }
 
     // Step 3: Prepare all objects (masters + objects)
     const mcpObjects = allObjects.map(convertObject);

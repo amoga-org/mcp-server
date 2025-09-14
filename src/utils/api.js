@@ -8,6 +8,7 @@ import {
 } from "./helper.js";
 import { v4 as uuidv4 } from "uuid";
 import { widgets } from "../config/widgets.js";
+import { getAttributes as fetchAttributes } from "../services/attribute.service.js";
 const isValidHexColor = (color) =>
   /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
 const defaultStatusColor = "#94A3B8";
@@ -591,7 +592,7 @@ export const createAppContract = async (
 ) => {
   const { token } = await getCrmToken(baseUrl, tenantName);
   // First get all available attributes
-  const allAvailableAttributes = await getAttributes(baseUrl, token);
+  const allAvailableAttributes = await fetchAttributes(baseUrl, token, appId);
   // Get existing contract to check for existing objects
   const existingContract = await getAppContract(baseUrl, tenantName, appId);
   const existingObjects = existingContract?.contract_json?.objects || [];

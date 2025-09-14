@@ -37,6 +37,7 @@ import {
 } from "./types/app.types.js";
 import { DummyDataSchema } from "./schemas/dummy-data-schema.js";
 import { CreateAppV1Schema } from "./schemas/app-v1-schema.js";
+import { CreateAttributeV2Schema } from "./schemas/attribute-v2-schema.js";
 import { CreateSOTV1Schema } from "./schemas/sot-v1-schema.js";
 import { CreateRoleV1Schema } from "./schemas/role-v1-schema.js";
 import { CreateAutomationV1Schema } from "./schemas/automation-v1-schema.js";
@@ -61,10 +62,10 @@ const server = new McpServer({
   capabilities: {
     resources: SERVER_CAPABILITIES.resources,
     tools: {
-    //   "create-app": {
-    //     description: TOOL_DESCRIPTIONS.CREATE_APP,
-    //     parameters: CreateAppSchema,
-    //   },
+        // "create-app": {
+        //   description: TOOL_DESCRIPTIONS.CREATE_APP,
+        //   parameters: CreateAppSchema,
+        // },
       "get-apps": {
         description: TOOL_DESCRIPTIONS.GET_APPS,
         parameters: GetAppsSchema,
@@ -77,50 +78,50 @@ const server = new McpServer({
         description: TOOL_DESCRIPTIONS.GET_APP_CONTRACT,
         parameters: GetAppContractSchema,
       },
-    //   "create-object": {
-    //     description: TOOL_DESCRIPTIONS.CREATE_OBJECT,
-    //     parameters: CreateObjectSchema,
-    //   },
-    //   "create-sot": {
-    //     description: TOOL_DESCRIPTIONS.CREATE_SOT,
-    //     parameters: CreateSotSchema,
-    //   },
+      //   "create-object": {
+      //     description: TOOL_DESCRIPTIONS.CREATE_OBJECT,
+      //     parameters: CreateObjectSchema,
+      //   },
+      //   "create-sot": {
+      //     description: TOOL_DESCRIPTIONS.CREATE_SOT,
+      //     parameters: CreateSotSchema,
+      //   },
       "delete-object": {
         description: TOOL_DESCRIPTIONS.DELETE_OBJECT,
         parameters: DeleteObjectSchema,
       },
-    //   "create-update-roles": {
-    //     description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ROLES,
-    //     parameters: CreateUpdateRolesSchema,
-    //   },
-    //   "create-attributes": {
-    //     description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
-    //     parameters: CreateAttributeSchema,
-    //   },
+      //   "create-update-roles": {
+      //     description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ROLES,
+      //     parameters: CreateUpdateRolesSchema,
+      //   },
+      //   "create-attributes": {
+      //     description: TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
+      //     parameters: CreateAttributeSchema,
+      //   },
       "add-dummy-data": {
         description: TOOL_DESCRIPTIONS.ADD_DUMMY_DATA,
         parameters: DummyDataSchema,
       },
-    //   "publish-app": {
-    //     description: TOOL_DESCRIPTIONS.PUBLISH_APP,
-    //     parameters: PublishAppSchema,
-    //   },
+      //   "publish-app": {
+      //     description: TOOL_DESCRIPTIONS.PUBLISH_APP,
+      //     parameters: PublishAppSchema,
+      //   },
       "check-publish-status": {
         description: TOOL_DESCRIPTIONS.CHECK_PUBLISH_STATUS,
         parameters: CheckPublishStatusSchema,
       },
-    //   "generate-workflow": {
-    //     description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
-    //     parameters: GenerateWorkflowSchema,
-    //   },
+      //   "generate-workflow": {
+      //     description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW,
+      //     parameters: GenerateWorkflowSchema,
+      //   },
       "generate-workflow-v1": {
         description: TOOL_DESCRIPTIONS.GENERATE_WORKFLOW_V1,
         parameters: WorkflowV1ParamsSchema,
       },
-    //   "create-automation": {
-    //     description: TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
-    //     parameters: CreateAutomationSchema,
-    //   },
+      //   "create-automation": {
+      //     description: TOOL_DESCRIPTIONS.CREATE_AUTOMATION,
+      //     parameters: CreateAutomationSchema,
+      //   },
       "create-navbar": {
         description: TOOL_DESCRIPTIONS.CREATE_NAVBAR,
         parameters: CreateNavbarSchema,
@@ -241,12 +242,12 @@ server.tool(
 //   CreateUpdateRolesSchema.shape,
 //   toolHandlers["create-update-roles"]
 // );
-server.tool(
-  "create-attributes",
-  TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
-  CreateAttributeSchema.shape,
-  toolHandlers["create-attributes"]
-);
+// server.tool(
+//   "create-attributes",
+//   TOOL_DESCRIPTIONS.CREATE_UPDATE_ATTRIBUTE,
+//   CreateAttributeSchema.shape,
+//   toolHandlers["create-attributes"]
+// );
 server.tool(
   "add-dummy-data",
   TOOL_DESCRIPTIONS.ADD_DUMMY_DATA,
@@ -318,8 +319,8 @@ server.tool(
 server.tool(
   "createSOTV1",
   "🆕 V1: Create objects with attributes and SOT - Enhanced with custom color support! " +
-  "Processes masters and objects with SOT, supports custom status_values with restricted amo_name values. " +
-  "Features: ✅ User-defined colors ✅ Restricted amo_name (todo, inProgress, completed, onHold, inCompleted, reopen) ✅ Backward compatibility",
+    "Processes masters and objects with SOT, supports custom status_values with restricted amo_name values. " +
+    "Features: ✅ User-defined colors ✅ Restricted amo_name (todo, inProgress, completed, onHold, inCompleted, reopen) ✅ Backward compatibility",
   CreateSOTV1Schema.shape,
   toolHandlers["createSOTV1"]
 );
@@ -362,6 +363,14 @@ server.tool(
     "✨ Support for all widget types (Table, Header, JSON Form, Comments, Progress bar, Notes, Activity, Attachment) ",
   CreatePagesV1Schema.shape,
   toolHandlers["createPagesV1"]
+);
+
+// V2 Enhanced Attribute Creation
+server.tool(
+  "create-attributeV2",
+  TOOL_DESCRIPTIONS.CREATE_ATTRIBUTE_V2,
+  CreateAttributeV2Schema.shape,
+  toolHandlers["create-attributeV2"]
 );
 
 /**

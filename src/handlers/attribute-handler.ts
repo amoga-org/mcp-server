@@ -387,7 +387,7 @@ export const createAttributeHandler = {
       const { token } = await getCrmToken(params.baseUrl, params.tenantName);
 
       // Get all existing attributes at tenant level
-      const allAvailableAttributes = await getAttributes(params.baseUrl, token);
+      const allAvailableAttributes = await getAttributes(params.baseUrl, token, "");
 
       // Filter out attributes that already exist
       const attributesToCreate = params.attributes.filter((attr) => {
@@ -497,6 +497,8 @@ export const createAttributeHandler = {
             is_auditable: false,
             attribute_meta: attributeMeta,
             is_global: false,
+            is_default: false,
+            is_internal: false,
             related_objects_configuration:
               attr.component_type === "related_field"
                 ? attr.related_objects_configuration || []
