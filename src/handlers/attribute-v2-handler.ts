@@ -45,13 +45,13 @@ const typeMetaDataV2 = {
     },
     instruction: {
       tj_type: "Instructions",
-      type_strapi: "",
+      type_strapi: "text",
       hide: true,
       data_type: "string",
     },
     title: {
       tj_type: "Title",
-      type_strapi: "",
+      type_strapi: "text",
       hide: true,
       data_type: "string",
     },
@@ -213,16 +213,28 @@ export const createAttributeV2Handler = {
 
       // Validate component subtypes match data types (skip for date type)
       for (const attr of params.attributes) {
-        if (attr.data_type !== "date" && attr.component_subtype) {
-          if (
-            !validateComponentSubtype(attr.data_type, attr.component_subtype)
-          ) {
-            throw new Error(
-              `Invalid component_subtype '${attr.component_subtype}' for data_type '${attr.data_type}'. ` +
-                `Valid options are: ${COMPONENT_SUBTYPE_MAP[
-                  attr.data_type as keyof typeof COMPONENT_SUBTYPE_MAP
-                ]?.join(", ")}`
-            );
+        if (attr.data_type !== "date") {
+          // For boolean, validate component_type instead of component_subtype
+          if (attr.data_type === "boolean" && attr.component_type) {
+            const validBooleanTypes = ["toggle", "checkbox"];
+            if (!validBooleanTypes.includes(attr.component_type)) {
+              throw new Error(
+                `Invalid component_type '${attr.component_type}' for data_type 'boolean'. ` +
+                `Valid options are: ${validBooleanTypes.join(", ")}`
+              );
+            }
+          } else if (attr.component_subtype) {
+            // For other types, validate component_subtype
+            if (
+              !validateComponentSubtype(attr.data_type, attr.component_subtype)
+            ) {
+              throw new Error(
+                `Invalid component_subtype '${attr.component_subtype}' for data_type '${attr.data_type}'. ` +
+                  `Valid options are: ${COMPONENT_SUBTYPE_MAP[
+                    attr.data_type as keyof typeof COMPONENT_SUBTYPE_MAP
+                  ]?.join(", ")}`
+              );
+            }
           }
         }
       }
@@ -254,6 +266,10 @@ export const createAttributeV2Handler = {
               attr.data_type === "related_field"
             ) {
               metadata = (typeCategory as any).default;
+            } else if (attr.data_type === "boolean") {
+              // For boolean, use component_type to map to component_subtype
+              const booleanSubtype = (attr.component_type as string) === "checkbox" ? "checkbox" : "toggle";
+              metadata = (typeCategory as any)[booleanSubtype] || (typeCategory as any).toggle;
             } else {
               metadata =
                 (typeCategory as any)[attr.component_subtype || ""] || {};
@@ -349,15 +365,28 @@ export const createAttributeV2Handler = {
               attr.component_subtype === "float" ? "decimal" : "number";
           }
 
+          // Special handling for media data type - API expects 'string' not 'media'
+          let finalDataType = metadata.data_type || attr.data_type;
+          if (attr.data_type === "media") {
+            finalDataType = "string";
+          }
+
+          // Handle component_subtype for boolean based on component_type
+          let finalComponentSubtype = attr.component_subtype || "";
+          if (attr.data_type === "boolean" && attr.component_type) {
+            finalComponentSubtype = (attr.component_type as string) === "checkbox" ? "checkbox" : "toggle";
+          } else if (attr.data_type === "date") {
+            finalComponentSubtype = ""; // Empty for date type
+          }
+
           return {
             tj_type: metadata.tj_type || "",
             background_color: "",
             border_radius: "",
             component: metadata.component || "",
-            data_type: metadata.data_type || attr.data_type,
-            component_type: attr.component_type,
-            component_subtype:
-              attr.data_type === "date" ? "" : attr.component_subtype || "", // Empty for date type
+            data_type: finalDataType,
+            component_type: attr.component_type || metadata.component || "",
+            component_subtype: finalComponentSubtype,
             default_value: attr.default_value || "",
             display_name: attr.display_name,
             disposition: "",
