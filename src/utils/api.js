@@ -592,7 +592,7 @@ export const createAppContract = async (
 ) => {
   const { token } = await getCrmToken(baseUrl, tenantName);
   // First get all available attributes
-  const allAvailableAttributes = await fetchAttributes(baseUrl, token, appId);
+  const allAvailableAttributes = await fetchAttributes(baseUrl, token);
   // Get existing contract to check for existing objects
   const existingContract = await getAppContract(baseUrl, tenantName, appId);
   const existingObjects = existingContract?.contract_json?.objects || [];
